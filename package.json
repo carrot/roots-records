@@ -1,0 +1,30 @@
+{
+  "name": "roots-records",
+  "version": "0.0.2",
+  "author": "Carrot Creative <dev@carrotcreative.com>",
+  "description": "dynamic content functionality for roots",
+  "license": "MIT",
+  "keywords": ["roots-extension", "json", "records", "dynamic content"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carrot/roots-records.git"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "coffee-script": "1.x",
+    "path": "*",
+    "lodash": "*"
+  },
+  "devDependencies": {
+    "roots": "3.x"
+  },
+  "peerDependencies": {
+    "roots": "3.x"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  }
+}
