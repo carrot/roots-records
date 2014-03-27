@@ -18,8 +18,7 @@ class Records
   to: (path) ->
     keys  = path.split "/"
     loc   = @object
-    for key in keys
-      loc = loc[key]
+    loc   = loc[key] for key in keys
     loc
 
   _parse: (callback) ->
@@ -54,6 +53,10 @@ class Records
         callback json
 
     request.end()
+
+  @_parsePath: (string, options, callback) ->
+    json = fs.readFileSync string, 'utf8'
+    callback json
 
   @_is_valid_url: (str) ->
     url  = url.parse str
