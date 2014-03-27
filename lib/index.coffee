@@ -28,8 +28,8 @@ class Records
       when Object, Array
         @constructor._parseObject @selector, @options, callback
 
-  _setup: (response) ->
-    @object  = @constructor._toJSON response
+  _setup: (object) ->
+    @object = object
     @to @options.path or "/"
 
   @_parseString: (string, options, callback) ->
@@ -50,20 +50,20 @@ class Records
       response.on "data", (chunk) ->
         json += chunk
       response.on "end", ->
-        callback json
+        callback JSON.parse(json)
 
     request.end()
 
   @_parsePath: (string, options, callback) ->
     json = fs.readFileSync string, 'utf8'
-    callback json
+    callback JSON.parse(json)
+
+  @_parseObject: (object, options, callback) ->
+    callback object
 
   @_is_valid_url: (str) ->
     url  = url.parse str
     url.protocol? and url.host? and url.path?
-
-  @_toJSON: (json) ->
-    JSON.parse json
 
 
 module.exports = Records
