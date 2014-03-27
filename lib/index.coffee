@@ -1,3 +1,6 @@
+->
+  "use strict"
+
 path  = require 'path'
 http  = require 'http'
 https = require 'https'
@@ -8,32 +11,35 @@ _     = require 'lodash'
 class Records
 
   constructor: (selector, options = {}) ->
-    this.selector = selector
-    this.options = options
-    @_determine()
+    @selector = selector
+    @options = options
+    @_parse @_setup.bind(this)
 
   to: (path) ->
-    console.log this.response
+    keys  = path.split "/"
+    loc   = @object
+    for key in keys
+      loc = loc[key]
+    loc
 
-  _determine: ->
-    switch this.selector.constructor
+  _parse: (callback) ->
+    switch @selector.constructor
       when String
-        @constructor._parseString this.selector, this.options
+        @constructor._parseString @selector, @options, callback
       when Object, Array
-        @constructor._parseObject this.selector, this.options
+        @constructor._parseObject @selector, @options, callback
 
-  _setup: ->
-    @to this.options.path or '/'
+  _setup: (response) ->
+    @object  = @constructor._toJSON response
+    @to @options.path or "/"
 
-  @_parseString: (string, options) ->
+  @_parseString: (string, options, callback) ->
     if @_is_valid_url string
-      @_parseURL string, options
+      @_parseURL string, options, callback
     else
-      @_parsePath string, options
+      @_parsePath string, options, callback
 
-  @_parseURL: (string, options) ->
-    url  = url.parse string
-
+  @_parseURL: (string, options, callback) ->
     if url.protocol is "https:"
       requester  = https
     else
@@ -41,27 +47,20 @@ class Records
 
     json = ""
 
-    request = requester.request _.merge(url, options), (response) ->
+    request = requester.request _.merge(url, options.request), (response) ->
       response.on "data", (chunk) ->
         json += chunk
       response.on "end", ->
-        json = Records._parseJSON json
+        callback json
 
     request.end()
-    json
-
-  @_parseObject: (obj, options) ->
-    console.log "object"
-
-  @_parseJSON: (json) ->
-    try
-      JSON.parse json
-    catch
-      {}
 
   @_is_valid_url: (str) ->
     url  = url.parse str
     url.protocol? and url.host? and url.path?
+
+  @_toJSON: (json) ->
+    JSON.parse json
 
 
 module.exports = Records
