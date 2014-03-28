@@ -1,69 +1,53 @@
-->
-  "use strict"
+fs        = require 'fs'
+request   = require 'request'
+W         = require 'when'
+nodefn    = require 'when/node'
 
-path  = require 'path'
-http  = require 'http'
-https = require 'https'
-url   = require 'url'
-fs    = require 'fs'
-_     = require 'lodash'
+module.exports = (opts) ->
 
-class Records
+  class Records
 
-  constructor: (selector, options = {}) ->
-    @selector = selector
-    @options = options
-    @_parse @_setup.bind(this)
+    constructor: (@roots) ->
+      @ran = false
 
-  to: (path) ->
-    keys  = path.split "/"
-    loc   = @object
-    loc   = loc[key] for key in keys
-    loc
+    compile_hooks: ->
+      before_file: (ctx) ->
+        if @ran then return
+        p = []
+        for key, obj of opts
+          p.push _process(ctx.roots, key, obj)
+        @ran = true
+        W.all(p)
 
-  _parse: (callback) ->
-    switch @selector.constructor
-      when String
-        @constructor._parseString @selector, @options, callback
-      when Object, Array
-        @constructor._parseObject @selector, @options, callback
+    _process = (roots, key, obj) ->
+      if obj.url?
+        return _url roots, key, obj
+      else if obj.file?
+        return _file roots, key, obj
+      else if obj.data?
+        return _data roots, key, obj
 
-  _setup: (object) ->
-    @object = object
-    @to @options.path or "/"
+    _url = (roots, key, obj) ->
+      nodefn.call(request, obj.url)
+        .tap (response) ->
+          _respond(roots, key, obj, JSON.parse(response[0].body))
 
-  @_parseString: (string, options, callback) ->
-    if @_is_valid_url string
-      @_parseURL string, options, callback
-    else
-      @_parsePath string, options, callback
+    _file = (roots, key, obj) ->
+      W ->
+        f = fs.readFileSync obj.file, 'utf8'
+        _respond(roots, key, obj, JSON.parse(f))
 
-  @_parseURL: (string, options, callback) ->
-    if url.protocol is "https:"
-      requester  = https
-    else
-      requester  = http
+    _data = (roots, key, obj) ->
+      W ->
+        _respond(roots, key, obj, obj.data)
 
-    json = ""
+    _respond = (roots, key, obj, json) ->
+      roots.config.locals ||= {}
+      roots.config.locals.records ||= {}
+      roots.config.locals[key] = _to json, (obj.path or "/")
 
-    request = requester.request _.merge(url, options.request), (response) ->
-      response.on "data", (chunk) ->
-        json += chunk
-      response.on "end", ->
-        callback JSON.parse(json)
-
-    request.end()
-
-  @_parsePath: (string, options, callback) ->
-    json = fs.readFileSync string, 'utf8'
-    callback JSON.parse(json)
-
-  @_parseObject: (object, options, callback) ->
-    callback object
-
-  @_is_valid_url: (str) ->
-    url  = url.parse str
-    url.protocol? and url.host? and url.path?
-
-
-module.exports = Records
+    _to = (json, path) ->
+      keys = path.split "/"
+      pos = json
+      pos = pos[key] for key in keys
+      return pos
