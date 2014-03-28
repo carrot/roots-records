@@ -14,17 +14,11 @@ Import objects into [roots](http://www.github.com/jenius/roots)' local schema fo
 
   module.exports =
     extensions: [
-      records([
-        {
-          name: 'books',
-          from: 'https://www.googleapis.com/books/v1/volumes?q=The+Great+Gatsby',
-          path: 'items'
-        },
-        {
-          name: 'tweets',
-          from: 'https://userstream.twitter.com/1.1/user.json'
-        }
-      ])
+      records({
+        books: {url: 'http://www.google.com/books'}, 
+        shoes: {file: 'data/books.json'},
+        scores: {data: {home: 1, away: 0}}
+      })
     ]
     
   # ...
@@ -41,31 +35,41 @@ The difference here is that with roots-records, the json is requested when roots
 
 #### Specifying json
 
-The `records` method returned on require accepts one argument: an array of hashes which specify the json you'd like to request on compile.
+The `records` method returned has one argument.  Pass an object like this:
 
 ```coffee
-  module.exports =
-    extensions: [
-      records([
-        {
-          name: 'books',
-          from: 'https://www.googleapis.com/books/v1/volumes?q=The+Great+Gatsby',
-          path: 'items'
-        }
-      )
-    ]
+module.exports =
+  extensions: [
+    records({
+      books: {url: 'http://www.google.com/books', path: 'items'}
+    })
+  ]
 ```
+
+Note that an exception will be thrown on compilation if the resource is unavailable.
 
 ### Options
 
-#### name
-The parent key in the records hash to be provided to your locals schema.  For example, `'books'` makes the requested json available to templates as `records.books`.
-
-#### from
-The resource.  This can be a URL, file path, or an object.  Note that an exception will be thrown on compilation if the resource is unavailable.
+#### source (either `url`, `file`, or `data`) 
+The json resource to request.
 
 #### path
-The route to the key in your json object to act as the "parent."  What does this mean?  Let's say the json requested has an `items` key, and that's all you want.  Specifying `items` as the `path` means that your locals will only receive the value of the `items` key in your json.
+A specific key from the requested json to be used.  For example, let's say your json is an object like this:
+
+```coffee
+{
+ "kind": "books#volumes",
+ "totalItems": 828,
+ "items": [
+    {
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald"
+    }
+  ]
+}
+```
+
+If you want to simply use the value of `"items"`, pass `"items"` to the `path` option, and your record will simply be the `items` array.
 
 ### Templates
 
