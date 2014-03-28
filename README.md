@@ -58,12 +58,11 @@ A specific key from the requested json to be used.  For example, let's say your 
 
 ```coffee
 {
- "kind": "books#volumes",
- "totalItems": 828,
- "items": [
+ kind: "books",
+ items: [
     {
-      "title": "The Great Gatsby",
-      "author": "F. Scott Fitzgerald"
+      title: "The Great Gatsby",
+      author: "F. Scott Fitzgerald"
     }
   ]
 }
