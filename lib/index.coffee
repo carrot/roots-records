@@ -11,40 +11,41 @@ module.exports = (opts) ->
       @ran = false
 
     compile_hooks: ->
-      before_file: (ctx) ->
+      before_file: (ctx) =>
         if @ran then return
         p = []
         for key, obj of opts
-          p.push _process(ctx.roots, key, obj)
+          p.push _process.call(@, key, obj)
         @ran = true
         W.all(p)
 
-    _process = (roots, key, obj) ->
+    _process = (key, obj) ->
       if obj.url?
-        return _url roots, key, obj
+        return _url.call(@, key, obj)
       else if obj.file?
-        return _file roots, key, obj
+        return _file.call(@, key, obj)
       else if obj.data?
-        return _data roots, key, obj
+        return _data.call(@, key, obj)
 
-    _url = (roots, key, obj) ->
+    _url = (key, obj) ->
       nodefn.call(request, obj.url)
-        .tap (response) ->
-          _respond(roots, key, obj, JSON.parse(response[0].body))
+        .tap (response) =>
+          _respond.call(@, key, obj, JSON.parse(response[0].body))
 
-    _file = (roots, key, obj) ->
+    _file = (key, obj) ->
       W ->
         f = fs.readFileSync obj.file, 'utf8'
-        _respond(roots, key, obj, JSON.parse(f))
+        _respond.call(@, key, obj, JSON.parse(f))
 
-    _data = (roots, key, obj) ->
+    _data = (key, obj) ->
       W ->
-        _respond(roots, key, obj, obj.data)
+        _respond.call(@, key, obj, obj.data)
 
-    _respond = (roots, key, obj, json) ->
-      roots.config.locals ||= {}
-      roots.config.locals.records ||= {}
-      roots.config.locals[key] = _to json, (obj.path or "/")
+    _respond = (key, obj, json) ->
+      @roots.config.locals ||= {}
+      @roots.config.locals.records ||= {}
+      @roots.config.locals[key] = json
+      console.log @
 
     _to = (json, path) ->
       keys = path.split "/"
