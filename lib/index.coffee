@@ -44,11 +44,12 @@ module.exports = (opts) ->
     _respond = (key, obj, json) ->
       @roots.config.locals ||= {}
       @roots.config.locals.records ||= {}
-      @roots.config.locals[key] = json
-      console.log @
+      @roots.config.locals.records[key] = json
 
-    _to = (json, path) ->
-      keys = path.split "/"
-      pos = json
-      pos = pos[key] for key in keys
-      return pos
+    # _to = (json, path) ->
+    #   keys = path.split "/" if path?
+    #   pos = json
+    #   for key of keys
+    #     pos = pos[key]
+    #   console.log pos
+    #   return pos
