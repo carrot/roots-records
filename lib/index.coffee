@@ -8,24 +8,34 @@ module.exports = (opts) ->
   class Records
 
     constructor: (@roots) ->
-      @ran = false
+      @roots.config.locals ||= {}
+      @__records = {}
 
-    compile_hooks: ->
+    compile_hooks: =>
+
       before_file: (ctx) =>
-        if @ran then return
-        p = []
-        for key, obj of opts
-          p.push _process.call(@, key, obj)
-        @ran = true
-        W.all(p)
+        roots  = ctx.roots
+        if !roots.records?
+          roots.records ||= []
+          for key, obj of opts
+            roots.records.push(_get.call(@, key, obj))
+        W.all(roots.records)
 
-    _process = (key, obj) ->
+      before_pass: (ctx) =>
+        roots   = ctx.file.roots
+        config  = roots.config
+        locals  = config.locals
+        locals.records = @__records
+
+    _get = (key, obj) ->
       if obj.url?
         return _url.call(@, key, obj)
       else if obj.file?
         return _file.call(@, key, obj)
       else if obj.data?
         return _data.call(@, key, obj)
+      else
+        throw new Error "A valid key is required"
 
     _url = (key, obj) ->
       nodefn.call(request, obj.url)
@@ -42,14 +52,12 @@ module.exports = (opts) ->
         _respond.call(@, key, obj, obj.data)
 
     _respond = (key, obj, json) ->
-      @roots.config.locals ||= {}
-      @roots.config.locals.records ||= {}
-      @roots.config.locals.records[key] = json
+      @__records[key] = _to(json, obj.path)
 
-    # _to = (json, path) ->
-    #   keys = path.split "/" if path?
-    #   pos = json
-    #   for key of keys
-    #     pos = pos[key]
-    #   console.log pos
-    #   return pos
+    _to = (json, path) ->
+      return json if !path?
+      keys = path.split "/"
+      pos = json
+      for key in keys
+        pos = pos[key] unless !pos[key]?
+      return pos
