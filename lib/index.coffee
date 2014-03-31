@@ -7,6 +7,12 @@ module.exports = (opts) ->
 
   class Records
 
+    ###*
+     * Creates a locals object if one isn't set and
+     * creates a records object to store results.
+     * @constructor
+     ###
+
     constructor: (@roots) ->
       @roots.config.locals ||= {}
       @__records ||= {}
@@ -25,6 +31,13 @@ module.exports = (opts) ->
         return if @roots.config.locals.records?
         @roots.config.locals.records = @__records
 
+    ###*
+     * Determines and calls the appropriate function
+     * for retrieving json based on keys in object.
+     * @param {string} key - the record key
+     * @param {object} obj - the key's parameters
+    ###
+
     get = (key, obj) ->
       if obj.url?
         return url.call(@, key, obj)
@@ -35,22 +48,57 @@ module.exports = (opts) ->
       else
         throw new Error "A valid key is required"
 
+    ###*
+     * Runs http request for json if URL is passed,
+     * adds result to records, and returns a promise.
+     * @param {string} key - the record key
+     * @param {object} obj - the key's parameters
+     ###
+
     url = (key, obj) ->
       nodefn.call(request, obj.url)
         .tap (response) =>
           respond.call(@, key, obj, JSON.parse(response[0].body))
+
+    ###*
+     * Reads a file if a path is passed, adds result
+     * to records, and returns a promise.
+     * @param {string} key - the record key
+     * @param {object} obj - the key's parameters
+     ###
 
     file = (key, obj) ->
       W ->
         f = fs.readFileSync obj.file, 'utf8'
         respond.call(@, key, obj, JSON.parse(f))
 
+    ###*
+     * If an object is passed, adds object
+     * to records, and returns a promise.
+     * @param {string} key - the record key
+     * @param {object} obj - the key's parameters
+     ###
+
     data = (key, obj) ->
       W ->
         respond.call(@, key, obj, obj.data)
 
+    ###*
+     * Takes json and adds to records object
+     * @param {string} key - the record key
+     * @param {object} obj - the key's parameters
+     * @params {object} json - the json result
+     ###
+
     respond = (key, obj, json) ->
       @__records[key] = to(json, obj.path)
+
+    ###*
+     * Navigates object based on "path."
+     * ex: 'book/items' returns obj['books']['items']
+     * @param {string} key - the record key
+     * @param {object} obj - the key's parameters
+     ###
 
     to = (json, path) ->
       if not path then return json
