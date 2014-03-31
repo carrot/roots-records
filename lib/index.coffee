@@ -34,8 +34,8 @@ module.exports = (opts) ->
     ###*
      * Determines and calls the appropriate function
      * for retrieving json based on keys in object.
-     * @param {string} key - the record key
-     * @param {object} obj - the key's parameters
+     * @param {String} key - the record key
+     * @param {Object} obj - the key's parameters
     ###
 
     get = (key, obj) ->
@@ -51,8 +51,8 @@ module.exports = (opts) ->
     ###*
      * Runs http request for json if URL is passed,
      * adds result to records, and returns a promise.
-     * @param {string} key - the record key
-     * @param {object} obj - the key's parameters
+     * @param {String} key - the record key
+     * @param {Object} obj - the key's parameters
      ###
 
     url = (key, obj) ->
@@ -75,8 +75,8 @@ module.exports = (opts) ->
     ###*
      * If an object is passed, adds object
      * to records, and returns a promise.
-     * @param {string} key - the record key
-     * @param {object} obj - the key's parameters
+     * @param {String} key - the record key
+     * @param {Object} obj - the key's parameters
      ###
 
     data = (key, obj) ->
@@ -85,9 +85,9 @@ module.exports = (opts) ->
 
     ###*
      * Takes json and adds to records object
-     * @param {string} key - the record key
-     * @param {object} obj - the key's parameters
-     * @params {object} json - the json result
+     * @param {String} key - the record key
+     * @param {Object} obj - the key's parameters
+     * @params {Object} json - the json result
      ###
 
     respond = (key, obj, json) ->
@@ -96,8 +96,8 @@ module.exports = (opts) ->
     ###*
      * Navigates object based on "path."
      * ex: 'book/items' returns obj['books']['items']
-     * @param {string} key - the record key
-     * @param {object} obj - the key's parameters
+     * @param {String} key - the json to be navigated
+     * @param {Object} path - the path to the desired value.
      ###
 
     to = (json, path) ->
