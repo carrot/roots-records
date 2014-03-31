@@ -9,7 +9,7 @@ module.exports = (opts) ->
 
     constructor: (@roots) ->
       @roots.config.locals ||= {}
-      @__records = {}
+      @__records ||= {}
 
     compile_hooks: =>
 
@@ -18,46 +18,43 @@ module.exports = (opts) ->
         if !roots.records?
           roots.records ||= []
           for key, obj of opts
-            roots.records.push(_get.call(@, key, obj))
+            roots.records.push(get.call(@, key, obj))
         W.all(roots.records)
 
       before_pass: (ctx) =>
-        roots   = ctx.file.roots
-        config  = roots.config
-        locals  = config.locals
-        locals.records = @__records
+        return if @roots.config.locals.records?
+        @roots.config.locals.records = @__records
 
-    _get = (key, obj) ->
+    get = (key, obj) ->
       if obj.url?
-        return _url.call(@, key, obj)
+        return url.call(@, key, obj)
       else if obj.file?
-        return _file.call(@, key, obj)
+        return file.call(@, key, obj)
       else if obj.data?
-        return _data.call(@, key, obj)
+        return data.call(@, key, obj)
       else
         throw new Error "A valid key is required"
 
-    _url = (key, obj) ->
+    url = (key, obj) ->
       nodefn.call(request, obj.url)
         .tap (response) =>
-          _respond.call(@, key, obj, JSON.parse(response[0].body))
+          respond.call(@, key, obj, JSON.parse(response[0].body))
 
-    _file = (key, obj) ->
+    file = (key, obj) ->
       W ->
         f = fs.readFileSync obj.file, 'utf8'
-        _respond.call(@, key, obj, JSON.parse(f))
+        respond.call(@, key, obj, JSON.parse(f))
 
-    _data = (key, obj) ->
+    data = (key, obj) ->
       W ->
-        _respond.call(@, key, obj, obj.data)
+        respond.call(@, key, obj, obj.data)
 
-    _respond = (key, obj, json) ->
-      @__records[key] = _to(json, obj.path)
+    respond = (key, obj, json) ->
+      @__records[key] = to(json, obj.path)
 
-    _to = (json, path) ->
-      return json if !path?
-      keys = path.split "/"
-      pos = json
-      for key in keys
-        pos = pos[key] unless !pos[key]?
+    to = (json, path) ->
+      if not path then return json
+      keys  = path.split "/"
+      pos   = json
+      pos   = pos[key] for key in keys when pos[key]?
       return pos
