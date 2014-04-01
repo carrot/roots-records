@@ -69,7 +69,7 @@ module.exports = (opts) ->
      ###
 
     file = (key, obj) ->
-      f = fs.readFileSync path.resolve(obj.file), 'utf8'
+      f = fs.readFileSync obj.file, 'utf8'
       respond.call(@, key, obj, JSON.parse(f))
 
     ###*
