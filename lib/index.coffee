@@ -1,5 +1,6 @@
 fs        = require 'fs'
 request   = require 'request'
+path      = require 'path'
 W         = require 'when'
 nodefn    = require 'when/node'
 
@@ -68,9 +69,8 @@ module.exports = (opts) ->
      ###
 
     file = (key, obj) ->
-      W ->
-        f = fs.readFileSync obj.file, 'utf8'
-        respond.call(@, key, obj, JSON.parse(f))
+      f = fs.readFileSync path.resolve(obj.file), 'utf8'
+      respond.call(@, key, obj, JSON.parse(f))
 
     ###*
      * If an object is passed, adds object
@@ -80,8 +80,7 @@ module.exports = (opts) ->
      ###
 
     data = (key, obj) ->
-      W ->
-        respond.call(@, key, obj, obj.data)
+      respond.call(@, key, obj, obj.data)
 
     ###*
      * Takes json and adds to records object
