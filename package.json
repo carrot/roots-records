@@ -18,11 +18,13 @@
   "dependencies": {
     "lodash": "*",
     "when": "*",
-    "request": "*"
+    "request": "*",
+    "path": "*"
   },
   "devDependencies": {
     "coffee-script": "1.7.x",
     "roots": "3.x",
+    "roots-util": "0.0.4",
     "mocha": "*",
     "should": "*",
     "glob": "*"
