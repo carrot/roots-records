@@ -1,6 +1,8 @@
 roots-records
 =============
 
+![tests](https://travis-ci.org/carrot/roots-records.png?branch=master)
+
 Import objects into [roots](http://www.github.com/jenius/roots)' local schema for use with any template engine.
 
 ### Installation
@@ -9,18 +11,18 @@ Import objects into [roots](http://www.github.com/jenius/roots)' local schema fo
 - modify your `app.coffee` as such:
   ```coffee
   records = require('roots-records')
-  
+
   # ...
 
   module.exports =
     extensions: [
       records({
-        books: {url: 'http://www.google.com/books'}, 
+        books: {url: 'http://www.google.com/books'},
         shoes: {file: 'data/books.json'},
         scores: {data: {home: 1, away: 0}}
       })
     ]
-    
+
   # ...
   ```
 
@@ -29,9 +31,9 @@ Import objects into [roots](http://www.github.com/jenius/roots)' local schema fo
 Let's say you've constructed a static site with roots, but want to use a cms to update content. You've got two options:
 
 - you can use [roots-client-templates](https://github.com/carrot/roots-client-templates) to precompile templates and write js which requests the json on page load (or whenever) and outputs the templates, or..
-- you can use this extension, which provides a simple method for grabbing json via a url or path and exposes the object to your template engine as locals. 
+- you can use this extension, which provides a simple method for grabbing json via a url or path and exposes the object to your template engine as locals.
 
-The difference here is that with roots-records, the json is requested when roots compiles and provided to your template engine as locals.  Every time `$ roots compile` is called, the specified json is requested and provided to your locals schema.  Note that this will slow the compilation process, as your json is requested on every compile. 
+The difference here is that with roots-records, the json is requested when roots compiles and provided to your template engine as locals.  Every time `$ roots compile` is called, the specified json is requested and provided to your locals schema.  Note that this will slow the compilation process, as your json is requested on every compile.
 
 #### Specifying json
 
@@ -50,7 +52,7 @@ Note that an exception will be thrown on compilation if the resource is unavaila
 
 ### Options
 
-#### source (either `url`, `file`, or `data`) 
+#### source (either `url`, `file`, or `data`)
 The json resource to request.
 
 #### path

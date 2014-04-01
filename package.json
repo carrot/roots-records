@@ -18,8 +18,7 @@
   "dependencies": {
     "lodash": "*",
     "when": "*",
-    "request": "*",
-    "path": "*"
+    "request": "*"
   },
   "devDependencies": {
     "coffee-script": "1.7.x",
