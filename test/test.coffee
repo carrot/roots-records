@@ -4,10 +4,10 @@ should     = require "should"
 fs         = require "fs"
 glob       = require "glob"
 W          = require "when"
-RootsUtil  = require "roots-util"
 nodefn     = require "when/node"
 run        = require("child_process").exec
 _fixtures  = path.join(__dirname, 'fixtures')
+RootsUtil  = require "roots-util"
 _roots     = path.join(_fixtures, 'roots')
 _projects  = {
   url: path.join(_roots, "url"),
@@ -20,14 +20,15 @@ _projects  = {
 
 init_roots = (base_path, compile_callback) ->
   roots = new Roots(base_path)
-  helpers = new RootsUtil.Helpers
-  helpers.project.install_dependencies(base_path, ->
-    roots.compile()
-      .on('done', compile_callback))
-
-  { roots: roots, helpers: helpers, public: path.join(base_path, "public") }
+  roots.compile()
+    .on('done', compile_callback)
+  { roots: roots, helpers: new RootsUtil.Helpers(base: base_path) }
 
 describe 'records', ->
+
+  before (done) ->
+    helpers = new RootsUtil.Helpers(base: _fixtures)
+    helpers.project.install_dependencies("*", done)
 
   describe 'url', ->
 
@@ -47,7 +48,7 @@ describe 'records', ->
     describe 'compiled template', ->
 
       it "should contain 'books'", ->
-        @_.helpers.file.contains(path.join(@_.public, "index.html"), "books").should.be.ok
+        @_.helpers.file.contains(path.join("public", "index.html"), "books").should.be.ok
 
   describe 'file', ->
 
@@ -67,7 +68,7 @@ describe 'records', ->
     describe 'compiled template', ->
 
       it "should have {foo: 'bar'} json", ->
-        @_.helpers.file.contains(path.join(@_.public, "index.html"), JSON.stringify({foo: "bar"})).should.be.ok
+        @_.helpers.file.contains(path.join("public", "index.html"), JSON.stringify({foo: "bar"})).should.be.ok
 
   describe 'data', ->
 
@@ -87,7 +88,7 @@ describe 'records', ->
     describe 'compiled template', ->
 
       it "should have {foo: 'bar'} json", ->
-        @_.helpers.file.contains(path.join(@_.public, "index.html"), JSON.stringify({foo: "bar"})).should.be.ok
+        @_.helpers.file.contains(path.join("public", "index.html"), JSON.stringify({foo: "bar"})).should.be.ok
 
   describe 'invalid key', ->
 
