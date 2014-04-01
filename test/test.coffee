@@ -28,7 +28,7 @@ describe 'records', ->
 
   before (done) ->
     helpers = new RootsUtil.Helpers(base: _fixtures)
-    helpers.project.install_dependencies("*", done)
+    helpers.project.install_dependencies("*/*", done)
 
   describe 'url', ->
 
