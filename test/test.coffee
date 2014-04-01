@@ -4,38 +4,111 @@ should     = require "should"
 fs         = require "fs"
 glob       = require "glob"
 W          = require "when"
+RootsUtil  = require "roots-util"
+nodefn     = require "when/node"
+run        = require("child_process").exec
 _fixtures  = path.join(__dirname, 'fixtures')
 _roots     = path.join(_fixtures, 'roots')
-_public    = path.join(_roots, 'public')
+_projects  = {
+  url: path.join(_roots, "url"),
+  file: path.join(_roots, "file"),
+  data: path.join(_roots, "data"),
+  invalid_key: path.join(_roots, "invalid_key"),
+  invalid_url: path.join(_roots, "invalid_url"),
+  invalid_file: path.join(_roots, "invalid_file")
+}
 
-should.contain = (path, content) ->
-  fs
-    .readFileSync path, 'utf8'
-    .indexOf content
-    .should
-    .not
-    .equal -1
+init_roots = (base_path, compile_callback) ->
+  roots = new Roots(base_path)
+  helpers = new RootsUtil.Helpers
+  helpers.project.install_dependencies(base_path, ->
+    roots.compile()
+      .on('done', compile_callback))
 
-before (done) ->
-  tasks = []
-  for d in glob.sync("#{_fixtures}/*/package.json")
-    p = path.dirname(d)
-    if fs.existsSync(path.join(p, 'node_modules')) then continue
-    tasks.push nodefn.call(run, "cd #{p}; npm install")
-  W.all(tasks).then -> done()
+  { roots: roots, helpers: helpers, public: path.join(base_path, "public") }
 
 describe 'records', ->
 
-  before (done) ->
-    project = new Roots(_roots)
-    project.compile()
-      .on 'done', done
+  describe 'url', ->
 
-  describe 'compiled template', ->
+    before (done) ->
+      @_ = init_roots _projects.url, done
 
-    it "should contain 'books'", ->
-      should.contain path.join(_public, "index.html"), "books"
+    describe 'locals object', ->
 
-    it "should JSON.parse", ->
-      obj  = JSON.parse(fs.readFileSync(path.join(_public, "index.html")))
-      obj.should.be.ok
+      it "should contain 'records' key", ->
+        @_.roots.config.locals.should.have.property("records")
+
+      describe "records object", ->
+
+        it "should contain 'books' key", ->
+          @_.roots.config.locals.records.should.have.property("books")
+
+    describe 'compiled template', ->
+
+      it "should contain 'books'", ->
+        @_.helpers.file.contains(path.join(@_.public, "index.html"), "books").should.be.ok
+
+  describe 'file', ->
+
+    before (done) ->
+      @_ = init_roots _projects.file, done
+
+    describe 'locals object', ->
+
+      it "should contain 'records' key", ->
+        @_.roots.config.locals.should.have.property("records")
+
+      describe "records object", ->
+
+        it "should contain 'books' key", ->
+          @_.roots.config.locals.records.should.have.property("books")
+
+    describe 'compiled template', ->
+
+      it "should have {foo: 'bar'} json", ->
+        @_.helpers.file.contains(path.join(@_.public, "index.html"), JSON.stringify({foo: "bar"})).should.be.ok
+
+  describe 'data', ->
+
+    before (done) ->
+      @_ = init_roots _projects.data, done
+
+    describe 'locals object', ->
+
+      it "should contain 'records' key", ->
+        @_.roots.config.locals.should.have.property("records")
+
+      describe "records object", ->
+
+        it "should contain 'books' key", ->
+          @_.roots.config.locals.records.should.have.property("books")
+
+    describe 'compiled template', ->
+
+      it "should have {foo: 'bar'} json", ->
+        @_.helpers.file.contains(path.join(@_.public, "index.html"), JSON.stringify({foo: "bar"})).should.be.ok
+
+  describe 'invalid key', ->
+
+    it 'should throw an error', (done) ->
+      new Roots(_projects.invalid_key).compile()
+        .on "error", (error) ->
+          should.exist(error)
+          done()
+
+  describe 'invalid url', ->
+
+    it 'should throw an error', (done) ->
+      new Roots(_projects.invalid_url).compile()
+        .on "error", (error) ->
+          should.exist(error)
+          done()
+
+  describe 'invalid file', ->
+
+    it 'should throw an error', (done) ->
+      new Roots(_projects.invalid_file).compile()
+        .on "error", (error) ->
+          should.exist(error)
+          done()
