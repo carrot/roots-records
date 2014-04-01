@@ -1,7 +1,7 @@
 roots-records
 =============
 
-[![tests](https://travis-ci.org/carrot/roots-records.png?branch=master)](https://travis-ci.org/carrot/roots-records)
+[![NPM version](https://badge.fury.io/js/roots-records.svg)](http://badge.fury.io/js/roots-records) [![tests](https://travis-ci.org/carrot/roots-records.png?branch=master)](https://travis-ci.org/carrot/roots-records)
 
 Import objects into [roots](http://www.github.com/jenius/roots)' local schema for use with any template engine.
 
