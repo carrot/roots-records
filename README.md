@@ -1,7 +1,7 @@
 roots-records
 =============
 
-![tests](https://travis-ci.org/carrot/roots-records.png?branch=master)
+[![NPM version](https://badge.fury.io/js/roots-records.svg)](http://badge.fury.io/js/roots-records) [![tests](https://travis-ci.org/carrot/roots-records.png?branch=master)](https://travis-ci.org/carrot/roots-records)
 
 Import objects into [roots](http://www.github.com/jenius/roots)' local schema for use with any template engine.
 
@@ -78,4 +78,5 @@ roots-records stores all results in your locals schema under the `records` key. 
 
 ## License & Contributing
 
-Coming soon...
+- Details on the license [can be found here](LICENSE.md)
+- Details on running tests and contributing [can be found here](contributing.md)
