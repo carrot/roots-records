@@ -2,106 +2,126 @@ fs        = require 'fs'
 request   = require 'request'
 path      = require 'path'
 W         = require 'when'
-nodefn    = require 'when/node'
 
 module.exports = (opts) ->
 
   class Records
 
     ###*
-     * Creates a locals object if one isn't set and
-     * creates a records object to store results.
+     * Creates a locals object if one isn't set.
      * @constructor
      ###
 
     constructor: (@roots) ->
-      @roots.config.locals ||= {}
-      @__records ||= {}
-
-    compile_hooks: =>
-
-      before_file: (ctx) =>
-        roots  = ctx.roots
-        if !roots.records?
-          roots.records ||= []
-          for key, obj of opts
-            roots.records.push(get.call(@, key, obj))
-        W.all(roots.records)
-
-      before_pass: (ctx) =>
-        return if @roots.config.locals.records?
-        @roots.config.locals.records = @__records
+      @roots.config.locals ||= []
+      @roots.config.locals.records ||= []
 
     ###*
-     * Determines and calls the appropriate function
-     * for retrieving json based on keys in object.
+     * Setup extension method loops through objects and
+     * returns a promise to get all data and store.
+     ###
+
+    setup: ->
+      if !@roots.__records
+        @roots.__records = []
+        for key, obj of opts
+          @roots.__records.push exec.call @, key, obj
+        W.all @roots.__records
+
+    ###*
+     * Promises to retrieve data, then
+     * stores object in locals hash
      * @param {String} key - the record key
      * @param {Object} obj - the key's parameters
     ###
 
-    get = (key, obj) ->
+    exec = (key, obj) ->
+      get obj
+        .then (response) =>
+          respond.call @, key, obj, response
+
+    ###*
+     * Determines and calls the appropriate function
+     * for retrieving json based on keys in object.
+     * @param {Object} obj - the key's parameters
+    ###
+
+    get = (obj) ->
+
+      deferred = W.defer()
+      resolver = deferred.resolver
+      promise = deferred.promise
+
       if obj.url?
-        return url.call(@, key, obj)
+        url obj, resolver
       else if obj.file?
-        return file.call(@, key, obj)
+        file obj, resolver
       else if obj.data?
-        return data.call(@, key, obj)
+        data obj, resolver
       else
         throw new Error "A valid key is required"
 
+      return promise
+
     ###*
      * Runs http request for json if URL is passed,
-     * adds result to records, and returns a promise.
-     * @param {String} key - the record key
+     * adds result to records, and returns a resolution.
      * @param {Object} obj - the key's parameters
+     * @param {Function} resolve - function to resolve deferred promise
      ###
 
-    url = (key, obj) ->
-      nodefn.call(request, obj.url)
-        .tap (response) =>
-          respond.call(@, key, obj, JSON.parse(response[0].body))
+    url = (obj, resolver) ->
+      request obj.url, (error, response, body) ->
+        __parse body, resolver
 
     ###*
      * Reads a file if a path is passed, adds result
-     * to records, and returns a promise.
-     * @param {string} key - the record key
-     * @param {object} obj - the key's parameters
+     * to records, and returns a resolution.
+     * @param {Object} obj - the key's parameters
+     * @param {Function} resolve - function to resolve deferred promise
      ###
 
-    file = (key, obj) ->
-      f = fs.readFileSync obj.file, 'utf8'
-      respond.call(@, key, obj, JSON.parse(f))
+    file = (obj, resolver) ->
+      fs.readFile obj.file, 'utf8', (error, body) ->
+        __parse body, resolver
 
     ###*
      * If an object is passed, adds object
-     * to records, and returns a promise.
-     * @param {String} key - the record key
+     * to records, and returns a resolution.
      * @param {Object} obj - the key's parameters
+     * @param {Function} resolve - function to resolve deferred promise
      ###
 
-    data = (key, obj) ->
-      respond.call(@, key, obj, obj.data)
+    data = (obj, resolver) ->
+      resolver
+        .resolve obj.data
 
     ###*
-     * Takes json and adds to records object
+     * Takes object and adds to records object in config.locals
      * @param {String} key - the record key
-     * @param {Object} obj - the key's parameters
-     * @params {Object} json - the json result
+     * @param {Object} object - the key's parameters
+     * @param {Object} response - the object to add
      ###
 
-    respond = (key, obj, json) ->
-      @__records[key] = to(json, obj.path)
+    respond = (key, obj, response) ->
+      @roots.config.locals.records[key] = to response, obj.path
 
     ###*
      * Navigates object based on "path."
      * ex: 'book/items' returns obj['books']['items']
-     * @param {String} key - the json to be navigated
+     * @param {String} object - the object to be navigated
      * @param {Object} path - the path to the desired value.
      ###
 
-    to = (json, path) ->
-      if not path then return json
-      keys  = path.split "/"
-      pos   = json
-      pos   = pos[key] for key in keys when pos[key]?
-      return pos
+    to = (object, path) ->
+      if not path then return object
+      keys = path.split "/"
+      pos = object
+      pos = pos[key] for key in keys when pos[key]?
+      pos
+
+    __parse = (response, resolver) ->
+      try
+        resolver.resolve JSON.parse(response)
+      catch error
+        resolver.reject error
