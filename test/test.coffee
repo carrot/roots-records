@@ -18,10 +18,10 @@ _projects  = {
   invalid_file: path.join(_roots, "invalid_file")
 }
 
-init_roots = (base_path, compile_callback) ->
+init_roots = (base_path, done) ->
   roots = new Roots(base_path)
+  roots.on('error', done).on('done', -> done())
   roots.compile()
-    .on('done', compile_callback)
   { roots: roots, helpers: new RootsUtil.Helpers(base: base_path) }
 
 describe 'records', ->
@@ -94,22 +94,18 @@ describe 'records', ->
 
     it 'should throw an error', (done) ->
       new Roots(_projects.invalid_key).compile()
-        .on "error", (error) ->
-          should.exist(error)
-          done()
+        .done(done(), should.exist)
 
   describe 'invalid url', ->
 
     it 'should throw an error', (done) ->
       new Roots(_projects.invalid_url).compile()
-        .on "error", (error) ->
-          should.exist(error)
-          done()
+        .catch()
+        .done(done())
 
   describe 'invalid file', ->
 
     it 'should throw an error', (done) ->
       new Roots(_projects.invalid_file).compile()
-        .on "error", (error) ->
-          should.exist(error)
-          done()
+        .catch(should.exist)
+        .done(done())
