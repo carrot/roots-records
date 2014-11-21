@@ -22,14 +22,11 @@
   },
   "devDependencies": {
     "coffee-script": "1.7.x",
-    "roots": "3.x",
-    "roots-util": "0.0.4",
+    "roots": "3.0.0-rc.10",
+    "roots-util": "0.1.x",
     "mocha": "*",
     "should": "*",
     "glob": "*"
-  },
-  "peerDependencies": {
-    "roots": "3.x"
   },
   "scripts": {
     "test": "mocha"
