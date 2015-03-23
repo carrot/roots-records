@@ -18,6 +18,7 @@ _projects  = {
   invalid_url: path.join(_roots, "invalid_url"),
   invalid_file: path.join(_roots, "invalid_file")
   single_view: path.join(_roots, "single_view")
+  invalid_collection: path.join(_roots, "invalid_collection")
 }
 
 init_roots = (base_path, done) ->
@@ -129,3 +130,8 @@ describe 'records', ->
 
     it 'should pass the correct locals for that single view', ->
       @_.helpers.file.contains(@test_path, 'Harper Lee').should.be.true
+
+    it 'should throw an error if collection is not an array', (done) ->
+      new Roots(_projects.invalid_collection).compile()
+        .catch(should.exist)
+        .done(done())
