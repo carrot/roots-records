@@ -17,6 +17,7 @@ _projects  = {
   invalid_key: path.join(_roots, "invalid_key"),
   invalid_url: path.join(_roots, "invalid_url"),
   invalid_file: path.join(_roots, "invalid_file")
+  single_view: path.join(_roots, "single_view")
 }
 
 init_roots = (base_path, done) ->
@@ -117,3 +118,14 @@ describe 'records', ->
 
     it 'should call the hook fn to manipulate the data before passing into views', ->
       @_.helpers.file.contains(path.join("public", "index.html"), JSON.stringify({foo: 'doge'})).should.be.ok
+
+  describe 'single page views', ->
+    before (done) ->
+      @_ = init_roots _projects.single_view, done
+      @test_path = path.join("public", "books", "to-kill-a-mockingbird.html")
+
+    it 'should compile a single page view', ->
+      @_.helpers.file.exists(@test_path).should.be.true
+
+    it 'should pass the correct locals for that single view', ->
+      @_.helpers.file.contains(@test_path, 'Harper Lee').should.be.true
