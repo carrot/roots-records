@@ -55,22 +55,37 @@ Note that an exception will be thrown on compilation if the resource is unavaila
 #### source (either `url`, `file`, or `data`)
 The json resource to request.
 
-#### path
-A specific key from the requested json to be used.  For example, let's say your json is an object like this:
+#### hook
+A function that is passed in the JSON data for your record and allows you to manipulate the data before your templates are compiled. Whatever this function returns will be set for your record's key.
+
+For example, with the following hook function:
 
 ```coffee
-{
- kind: "books",
- items: [
-    {
-      title: "The Great Gatsby",
-      author: "F. Scott Fitzgerald"
+extensions: [
+  records({
+    books: {
+      data: {
+        foo: "bar"
+      }, 
+      hook: (obj) ->
+        obj.foo = "doge"
+        return obj
     }
-  ]
-}
+  })
+]
 ```
 
-If you want to simply use the value of `"items"`, pass `"items"` to the `path` option, and your record will simply be the `items` array.
+And the following template:
+
+```jade
+h1= records.books.foo
+```
+
+Should result in an output of the following:
+
+```html
+<h1>doge</h1>
+```
 
 ### Templates
 
