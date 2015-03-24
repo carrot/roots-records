@@ -13,6 +13,7 @@ _projects  = {
   url: path.join(_roots, "url"),
   file: path.join(_roots, "file"),
   data: path.join(_roots, "data"),
+  data_hook: path.join(_roots, "data_hook"),
   invalid_key: path.join(_roots, "invalid_key"),
   invalid_url: path.join(_roots, "invalid_url"),
   invalid_file: path.join(_roots, "invalid_file")
@@ -109,3 +110,10 @@ describe 'records', ->
       new Roots(_projects.invalid_file).compile()
         .catch(should.exist)
         .done(done())
+
+  describe 'data hook', ->
+    before (done) ->
+      @_ = init_roots _projects.data_hook, done
+
+    it 'should call the hook fn to manipulate the data before passing into views', ->
+      @_.helpers.file.contains(path.join("public", "index.html"), JSON.stringify({foo: 'doge'})).should.be.ok

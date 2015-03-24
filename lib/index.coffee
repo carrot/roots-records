@@ -104,21 +104,8 @@ module.exports = (opts) ->
      ###
 
     respond = (key, obj, response) ->
-      @roots.config.locals.records[key] = to response, obj.path
-
-    ###*
-     * Navigates object based on "path."
-     * ex: 'book/items' returns obj['books']['items']
-     * @param {String} object - the object to be navigated
-     * @param {Object} path - the path to the desired value.
-     ###
-
-    to = (object, path) ->
-      if not path then return object
-      keys = path.split "/"
-      pos = object
-      pos = pos[key] for key in keys when pos[key]?
-      pos
+      response = if obj.hook then obj.hook(response) else response
+      @roots.config.locals.records[key] = response
 
     __parse = (response, resolver) ->
       try
