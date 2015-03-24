@@ -105,14 +105,18 @@ Should result in an output of the following:
 <h1>doge</h1>
 ```
 
-#### collection
-A function that's passed in the JSON data and returns an array that will the data iterated over to build the single page views.
+### Single View Options
+
+These options should be used if you want to generate stand alone single views for a collection of data in your record.
 
 #### template
-The path to the template to use for each item in the collection.
+The path to the template to use for each object in the collection.
+
+#### collection
+A function that's passed in the JSON data for that record and returns an array of objects that will be iterated over to build the single page views.
 
 #### out
-A function that's passed each iterated item in the collection and returns the path where that view's outputted HTML file will be saved.
+A function that's passed each iterated object in the collection and returns the path where that view's outputted HTML file will be saved.
 
 ### Templates
 
