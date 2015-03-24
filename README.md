@@ -50,6 +50,24 @@ module.exports =
 
 Note that an exception will be thrown on compilation if the resource is unavailable.
 
+#### Single Views
+
+You can compile stand alone single page views from any of your records objects using whatever view template you'd like by passing in `template`, `collection`, and `out`:
+
+```coffee
+module.exports =
+  extensions: [
+    records({
+      books: {
+        url: 'http://www.google.com/books',
+        template: "views/_book.jade",
+        collection: (d) -> d.response.books,
+        out: (book) -> "/books/#{S(book.title).slugify().s}"
+      }
+    })
+  ]
+```
+
 ### Options
 
 #### source (either `url`, `file`, or `data`)
@@ -86,6 +104,15 @@ Should result in an output of the following:
 ```html
 <h1>doge</h1>
 ```
+
+#### collection
+A function that's passed in the JSON data and returns an array that will the data iterated over to build the single page views.
+
+#### template
+The path to the template to use for each item in the collection.
+
+#### out
+A function that's passed each iterated item in the collection and returns the path where that view's outputted HTML file will be saved.
 
 ### Templates
 
