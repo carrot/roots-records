@@ -1,0 +1,7 @@
+{
+  "name": "test",
+  "dependencies": {
+    "jade": "*",
+    "string": "^3.1.0"
+  }
+}

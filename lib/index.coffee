@@ -2,6 +2,8 @@ fs        = require 'fs'
 request   = require 'request'
 path      = require 'path'
 W         = require 'when'
+_         = require 'lodash'
+RootsUtil = require 'roots-util'
 
 module.exports = (opts) ->
 
@@ -13,7 +15,8 @@ module.exports = (opts) ->
      ###
 
     constructor: (@roots) ->
-      @roots.config.locals ||= []
+      @util = new RootsUtil(@roots)
+      @roots.config.locals ||= {}
       @roots.config.locals.records ||= []
 
     ###*
@@ -37,8 +40,12 @@ module.exports = (opts) ->
 
     exec = (key, obj) ->
       get obj
-        .then (response) =>
+        .tap (response) =>
           respond.call @, key, obj, response
+        .then (response) =>
+          if obj.template
+            template = path.join(@roots.root, obj.template)
+            compile_single_views.call(@, obj.collection(response), template, obj.out)
 
     ###*
      * Determines and calls the appropriate function
@@ -106,6 +113,25 @@ module.exports = (opts) ->
     respond = (key, obj, response) ->
       response = if obj.hook then obj.hook(response) else response
       @roots.config.locals.records[key] = response
+
+    ###*
+     * Promises to compile single views for a given collection using a template
+     * and saves to the path given by the out_fn
+     * @param {Array} collection - the collection from which to create single
+     * views
+     * @param {String} template - path to the template to use
+     * @param {Function} out_fn - returns the path to save the output file given
+     * each item
+    ###
+
+    compile_single_views = (collection, template, out_fn) ->
+      if not _.isArray(collection) then throw new Error "collection must return an array"
+      W.map collection, (item) =>
+        @roots.config.locals.item = item
+        compiler = _.find @roots.config.compilers, (c) ->
+          _.contains(c.extensions, path.extname(template).substring(1))
+        compiler.renderFile(template, @roots.config.locals)
+          .then((res) => @util.write("#{out_fn(item)}.html", res))
 
     __parse = (response, resolver) ->
       try
