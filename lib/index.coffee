@@ -131,7 +131,7 @@ module.exports = (opts) ->
         compiler = _.find @roots.config.compilers, (c) ->
           _.contains(c.extensions, path.extname(template).substring(1))
         compiler.renderFile(template, @roots.config.locals)
-          .then((res) => @util.write("#{out_fn(item)}.html", res))
+          .then((res) => @util.write("#{out_fn(item)}.html", res.result))
 
     __parse = (response, resolver) ->
       try
