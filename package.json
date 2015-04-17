@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "coffee-script": "1.7.x",
-    "roots": "3.0.0-rc.10",
+    "roots": "3.0.x",
     "roots-util": "0.1.x",
     "mocha": "*",
     "should": "*",
