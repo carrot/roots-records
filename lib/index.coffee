@@ -128,10 +128,12 @@ module.exports = (opts) ->
       if not _.isArray(collection) then throw new Error "collection must return an array"
       W.map collection, (item) =>
         @roots.config.locals.item = item
+        compiled_file_path = "#{out_fn(item)}.html"
+        _path = "/#{compiled_file_path.replace(path.sep, '/')}"
         compiler = _.find @roots.config.compilers, (c) ->
           _.contains(c.extensions, path.extname(template).substring(1))
-        compiler.renderFile(template, @roots.config.locals)
-          .then((res) => @util.write("#{out_fn(item)}.html", res.result))
+        compiler.renderFile(template, _.extend(@roots.config.locals, _path: _path))
+          .then((res) => @util.write(compiled_file_path, res.result))
 
     __parse = (response, resolver) ->
       try
