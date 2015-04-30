@@ -122,6 +122,8 @@ A function that's passed each iterated object in the collection and returns the 
 
 roots-records stores all results in your locals schema under the `records` key.  So, in your templates, you can access the values of json you named `books` via `records.books`.
 
+Inside a single view template, you can access the collection item on the `item` local.
+
 ## License & Contributing
 
 - Details on the license [can be found here](LICENSE.md)
