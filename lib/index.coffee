@@ -132,7 +132,8 @@ module.exports = (opts) ->
         _path = "/#{compiled_file_path.replace(path.sep, '/')}"
         compiler = _.find @roots.config.compilers, (c) ->
           _.contains(c.extensions, path.extname(template).substring(1))
-        compiler.renderFile(template, _.extend(@roots.config.locals, _path: _path))
+        compiler_options = @roots.config[compiler.name] ? {}
+        compiler.renderFile(template, _.extend(@roots.config.locals, compiler_options, _path: _path))
           .then((res) => @util.write(compiled_file_path, res.result))
 
     __parse = (response, resolver) ->
