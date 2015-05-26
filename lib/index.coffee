@@ -44,8 +44,7 @@ module.exports = (opts) ->
           respond.call @, key, obj, response
         .then (response) =>
           if obj.template
-            template = path.join(@roots.root, obj.template)
-            compile_single_views.call(@, obj.collection(response), template, obj.out)
+            compile_single_views.call(@, obj.collection(response), obj.template, obj.out)
 
     ###*
      * Determines and calls the appropriate function
@@ -128,12 +127,13 @@ module.exports = (opts) ->
       if not _.isArray(collection) then throw new Error "collection must return an array"
       W.map collection, (item) =>
         @roots.config.locals.item = item
+        template_path = path.join(@roots.root, if _.isFunction(template) then template(item) else template);
         compiled_file_path = "#{out_fn(item)}.html"
         _path = "/#{compiled_file_path.replace(path.sep, '/')}"
         compiler = _.find @roots.config.compilers, (c) ->
-          _.contains(c.extensions, path.extname(template).substring(1))
+          _.contains(c.extensions, path.extname(template_path).substring(1))
         compiler_options = @roots.config[compiler.name] ? {}
-        compiler.renderFile(template, _.extend(@roots.config.locals, compiler_options, _path: _path))
+        compiler.renderFile(template_path, _.extend(@roots.config.locals, compiler_options,_path: _path))
           .then((res) => @util.write(compiled_file_path, res.result))
 
     __parse = (response, resolver) ->

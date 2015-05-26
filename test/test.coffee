@@ -124,6 +124,7 @@ describe 'records', ->
     before (done) ->
       @_ = init_roots _projects.single_view, done
       @test_path = path.join("public", "books", "to-kill-a-mockingbird.html")
+      @test_path_dynamic = path.join("public", "tvshows", "fringe.html")
 
     it 'should compile a single page view', ->
       @_.helpers.file.exists(@test_path).should.be.true
@@ -136,6 +137,9 @@ describe 'records', ->
 
     it "should use the adapter config settings like 'pretty:true'", ->
       @_.helpers.file.contains(@test_path, '\n').should.be.true
+
+    it 'should compile with a dynamic template path', ->
+      @_.helpers.file.contains(@test_path_dynamic, 'dynamic').should.be.true
 
     it 'should throw an error if collection is not an array', (done) ->
       new Roots(_projects.invalid_collection).compile()
