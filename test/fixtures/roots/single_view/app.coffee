@@ -28,7 +28,7 @@ module.exports =
         }
       },
       tvshows: {
-        out: (tvshow) -> "/tvshows/#{S(tvshow.title).slugify().s}"
+        out: (tvshow) -> "/tvshows/#{S.slugify(tvshow.title)}"
         collection: (d) -> d.response
         template: (tvshow) ->
           if tvshow.template then "views/_tvshow_#{tvshow.template}.jade" else "views/_tvshow.jade"
