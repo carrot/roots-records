@@ -1,5 +1,5 @@
 records = require '../../../..'
-S       = require 'string'
+S       = require 'underscore.string'
 
 module.exports =
   ignores: ["**/_*"]
@@ -7,7 +7,7 @@ module.exports =
   extensions: [
     records({
       books: {
-        out: (book) -> "/books/#{S(book.title).slugify().s}"
+        out: (book) -> "/books/#{S.slugify(book.title)}"
         collection: (d) -> d.response
         template: "views/_book.jade"
         data: {
