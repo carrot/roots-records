@@ -134,6 +134,9 @@ describe 'records', ->
     it 'should pass the _path view helper for that single view', ->
       @_.helpers.file.contains(@test_path, '/books/to-kill-a-mockingbird.html')
 
+    it "should use the adapter config settings like 'pretty:true'", ->
+      @_.helpers.file.contains(@test_path, '\n').should.be.true
+
     it 'should throw an error if collection is not an array', (done) ->
       new Roots(_projects.invalid_collection).compile()
         .catch(should.exist)
