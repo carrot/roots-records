@@ -2,6 +2,6 @@
   "name": "test",
   "dependencies": {
     "jade": "*",
-    "underscore.string": "3.0.x"
+    "underscore.string": "3.x"
   }
 }

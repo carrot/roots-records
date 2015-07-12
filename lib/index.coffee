@@ -25,11 +25,10 @@ module.exports = (opts) ->
      ###
 
     setup: ->
-      if !@roots.__records
-        @roots.__records = []
-        for key, obj of opts
-          @roots.__records.push exec.call @, key, obj
-        W.all @roots.__records
+      @roots.__records = []
+      for key, obj of opts
+        @roots.__records.push(exec.call(@, key, obj))
+      W.all @roots.__records
 
     ###*
      * Promises to retrieve data, then
@@ -39,12 +38,15 @@ module.exports = (opts) ->
     ###
 
     exec = (key, obj) ->
-      get obj
-        .tap (response) =>
-          respond.call @, key, obj, response
-        .then (response) =>
-          if obj.template
-            compile_single_views.call(@, obj.collection(response), obj.template, obj.out)
+      get(obj).tap (res) =>
+        respond.call(@, key, obj, res)
+      .then (res) =>
+        if obj.template
+          compile_single_views.call(@,
+            obj.collection(res),
+            obj.template,
+            obj.out
+          )
 
     ###*
      * Determines and calls the appropriate function
@@ -53,21 +55,18 @@ module.exports = (opts) ->
     ###
 
     get = (obj) ->
-
-      deferred = W.defer()
-      resolver = deferred.resolver
-      promise = deferred.promise
+      d = W.defer()
 
       if obj.url?
-        url obj, resolver
+        url(obj, d.resolver)
       else if obj.file?
-        file obj, resolver
+        file(obj, d.resolver)
       else if obj.data?
-        data obj, resolver
+        data(obj, d.resolver)
       else
         throw new Error "A valid key is required"
 
-      return promise
+      return d.promise
 
     ###*
      * Runs http request for json if URL is passed,
@@ -78,7 +77,7 @@ module.exports = (opts) ->
 
     url = (obj, resolver) ->
       request obj.url, (error, response, body) ->
-        __parse body, resolver
+        __parse(body, resolver)
 
     ###*
      * Reads a file if a path is passed, adds result
@@ -89,7 +88,7 @@ module.exports = (opts) ->
 
     file = (obj, resolver) ->
       fs.readFile obj.file, 'utf8', (error, body) ->
-        __parse body, resolver
+        __parse(body, resolver)
 
     ###*
      * If an object is passed, adds object
@@ -99,8 +98,7 @@ module.exports = (opts) ->
      ###
 
     data = (obj, resolver) ->
-      resolver
-        .resolve obj.data
+      resolver.resolve(obj.data)
 
     ###*
      * Takes object and adds to records object in config.locals
@@ -124,20 +122,27 @@ module.exports = (opts) ->
     ###
 
     compile_single_views = (collection, template, out_fn) ->
-      if not _.isArray(collection) then throw new Error "collection must return an array"
+      if not _.isArray(collection)
+        throw new Error "collection must return an array"
+
       W.map collection, (item) =>
         @roots.config.locals.item = item
-        template_path = path.join(@roots.root, if _.isFunction(template) then template(item) else template);
+        template_path = path.join(
+          @roots.root,
+          if _.isFunction(template) then template(item) else template
+        )
         compiled_file_path = "#{out_fn(item)}.html"
         _path = "/#{compiled_file_path.replace(path.sep, '/')}"
         compiler = _.find @roots.config.compilers, (c) ->
           _.contains(c.extensions, path.extname(template_path).substring(1))
         compiler_options = @roots.config[compiler.name] ? {}
-        compiler.renderFile(template_path, _.extend(@roots.config.locals, compiler_options,_path: _path))
-          .then((res) => @util.write(compiled_file_path, res.result))
+        compiler.renderFile(
+          template_path,
+          _.extend(@roots.config.locals, compiler_options,_path: _path)
+          ).then((res) => @util.write(compiled_file_path, res.result))
 
     __parse = (response, resolver) ->
       try
-        resolver.resolve JSON.parse(response)
+        resolver.resolve(JSON.parse(response))
       catch error
-        resolver.reject error
+        resolver.reject(error)
