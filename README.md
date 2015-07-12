@@ -1,6 +1,6 @@
 # roots-records
 
-[![NPM version](https://badge.fury.io/js/roots-records.svg)](http://badge.fury.io/js/roots-records) [![tests](https://travis-ci.org/carrot/roots-records.png?branch=master)](https://travis-ci.org/carrot/roots-records)
+[![NPM version](https://badge.fury.io/js/roots-records.svg)](http://badge.fury.io/js/roots-records) [![tests](http://img.shields.io/travis/carrot/roots-records/master.svg?style=flat)](https://travis-ci.org/carrot/roots-records)
 [![coverage](http://img.shields.io/coveralls/carrot/roots-records.svg?style=flat)](https://coveralls.io/r/carrot/roots-records) [![dependencies](http://img.shields.io/gemnasium/carrot/roots-records.svg?style=flat)](https://gemnasium.com/carrot/roots-records)
 
 Import objects into [roots](http://www.github.com/jenius/roots)' local schema for use with any template engine.
