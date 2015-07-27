@@ -25,10 +25,8 @@ module.exports = (opts) ->
      ###
 
     setup: ->
-      @roots.__records = []
-      for key, obj of opts
-        @roots.__records.push(exec.call(@, key, obj))
-      W.all(@roots.__records)
+      records_fetch_tasks = (exec.call(@, key, obj) for key, obj of opts)
+      W.all(records_fetch_tasks)
 
     ###*
      * Promises to retrieve data, then
