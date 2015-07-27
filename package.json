@@ -17,7 +17,7 @@
   "main": "lib",
   "dependencies": {
     "lodash": "3.x",
-    "request": "2.x",
+    "rest": "1.x",
     "roots-util": "0.1.x",
     "when": "3.x"
   },

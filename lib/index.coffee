@@ -1,5 +1,5 @@
 fs        = require 'fs'
-request   = require 'request'
+rest      = require 'rest'
 path      = require 'path'
 W         = require 'when'
 _         = require 'lodash'
@@ -25,8 +25,12 @@ module.exports = (opts) ->
      ###
 
     setup: ->
-      records_fetch_tasks = (exec.call(@, key, obj) for key, obj of opts)
-      W.all(records_fetch_tasks)
+      fetch_records = (get(key, conf) for key, conf of opts)
+
+      W.all(fetch_records).with(@)
+        .then (res) -> W.map(res, apply_hook)
+        .tap (res) -> W.map(res, add_to_locals.bind(@))
+        .tap (res) -> W.map(res, compile_single_views.bind(@))
 
     ###*
      * Promises to retrieve data, then
@@ -36,9 +40,9 @@ module.exports = (opts) ->
     ###
 
     exec = (key, obj) ->
-      get(obj).tap (res) =>
+      get(obj).then (res) =>
         respond.call(@, key, obj, res)
-      .then (res) =>
+      .tap (res) =>
         if obj.template
           compile_single_views.call(@,
             (if obj.collection? then obj.collection(res) else res),
@@ -52,19 +56,14 @@ module.exports = (opts) ->
      * @param {Object} obj - the key's parameters
     ###
 
-    get = (obj) ->
-      d = W.defer()
+    get = (key, opts) ->
+      data_promise = switch
+        when opts.hasOwnProperty('url') then resolve_url(opts)
+        when opts.hasOwnProperty('file') then resolve_file(opts)
+        when opts.hasOwnProperty('data') then W.resolve(opts.data)
+        else throw new Error("Key must be 'url', 'file', or 'data'")
 
-      if obj.url?
-        url(obj, d.resolver)
-      else if obj.file?
-        file(obj, d.resolver)
-      else if obj.data?
-        data(obj, d.resolver)
-      else
-        throw new Error "A valid key is required"
-
-      return d.promise
+      data_promise.then (data) -> { key: key, options: opts, data: data }
 
     ###*
      * Runs http request for json if URL is passed,
@@ -73,9 +72,19 @@ module.exports = (opts) ->
      * @param {Function} resolve - function to resolve deferred promise
      ###
 
-    url = (obj, resolver) ->
-      request obj.url, (error, response, body) ->
-        __parse(body, resolver)
+    resolve_url = (opts) ->
+      mime = require('rest/interceptor/mime')
+      error_code = require('rest/interceptor/errorCode')
+      client = rest.wrap(mime).wrap(error_code)
+
+      client_opts = { path: opts.url }
+
+      if opts.method then client_opts.method = opts.method
+      if opts.params then client_opts.params = opts.params
+      if opts.headers then client_opts.headers = opts.headers
+      if opts.entity then client_opts.entity = opts.entity
+
+      client(client_opts).then (res) -> res.entity
 
     ###*
      * Reads a file if a path is passed, adds result
@@ -99,15 +108,26 @@ module.exports = (opts) ->
       resolver.resolve(obj.data)
 
     ###*
-     * Takes object and adds to records object in config.locals
+     * If a hook was provided in the config, runs the response through the hook.
+     *
      * @param {String} key - the record key
-     * @param {Object} object - the key's parameters
-     * @param {Object} response - the object to add
+     * @param {Object} config - the record's config options
+     * @param {Object} response - the record's actual data
      ###
 
-    respond = (key, obj, response) ->
-      response = if obj.hook then obj.hook(response) else response
-      @roots.config.locals.records[key] = response
+    apply_hook = (obj) ->
+      if not obj.options.hook then return obj
+      obj.data = obj.options.hook(response)
+      return obj
+
+    ###*
+     * Given a resolved records object, adds it to the view's locals.
+     *
+     * @param {Object} obj - records object, containing a `key` and `data`
+    ###
+
+    add_to_locals = (obj) ->
+      @roots.config.locals.records[obj.key] = obj.data
 
     ###*
      * Promises to compile single views for a given collection using a template
