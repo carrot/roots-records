@@ -45,9 +45,9 @@ module.exports = (opts) ->
 
     fetch = (key, opts) ->
       data_promise = switch
-        when opts.hasOwnProperty('url') then resolve_url(opts)
-        when opts.hasOwnProperty('file') then resolve_file(opts)
-        when opts.hasOwnProperty('data') then W.resolve(opts.data)
+        when _.has(opts, 'url') then resolve_url(opts)
+        when _.has(opts, 'file') then resolve_file(opts)
+        when _.has(opts, 'data') then W.resolve(opts.data)
         else throw new Error("You must provide a 'url', 'file', or 'data' key")
 
       data_promise.then (data) -> { key: key, options: opts, data: data }
