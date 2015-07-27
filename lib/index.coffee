@@ -28,7 +28,7 @@ module.exports = (opts) ->
       @roots.__records = []
       for key, obj of opts
         @roots.__records.push(exec.call(@, key, obj))
-      W.all @roots.__records
+      W.all(@roots.__records)
 
     ###*
      * Promises to retrieve data, then
@@ -43,7 +43,7 @@ module.exports = (opts) ->
       .then (res) =>
         if obj.template
           compile_single_views.call(@,
-            obj.collection(res),
+            (if obj.collection? then obj.collection(res) else res),
             obj.template,
             obj.out
           )
@@ -136,10 +136,14 @@ module.exports = (opts) ->
         compiler = _.find @roots.config.compilers, (c) ->
           _.contains(c.extensions, path.extname(template_path).substring(1))
         compiler_options = @roots.config[compiler.name] ? {}
+
         compiler.renderFile(
           template_path,
-          _.extend(@roots.config.locals, compiler_options,_path: _path)
-          ).then((res) => @util.write(compiled_file_path, res.result))
+          _.extend(
+            @roots.config.locals,
+            compiler_options,
+            _path: _path
+          )).then((res) => @util.write(compiled_file_path, res.result))
 
     __parse = (response, resolver) ->
       try
