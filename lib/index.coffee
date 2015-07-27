@@ -98,7 +98,12 @@ module.exports = (opts) ->
       @roots.config.locals.records[obj.key] = obj.data
 
     ###*
-     * This needs to be gutted and refactored still
+     * Given a records object, if that object has `template` and `out` keys, and
+     * its data is an array, iterates through its data, creating a single view
+     * for each item in the array using the template provided in the `template`
+     * value, and writing to the path provided in the `out` value.
+     *
+     * @param {Object} obj - record object with a `key`, `options`, and `data`
     ###
 
     compile_single_views = (obj) ->
@@ -108,23 +113,24 @@ module.exports = (opts) ->
         throw new Error("You must also provide an 'out' option")
       if obj.out and not obj.template
         throw new Error("You must also provide a 'template' option")
+      if not Array.isArray(obj.data)
+        throw new Error("#{obj.key} data must be an array")
 
-      W.map collection, (item) =>
-        @roots.config.locals.item = item
-        template_path = path.join(
-          @roots.root,
-          if _.isFunction(template) then template(item) else template
-        )
-        compiled_file_path = "#{out_fn(item)}.html"
-        _path = "/#{compiled_file_path.replace(path.sep, '/')}"
+      W.map obj.data, (item) =>
+        tpl = if _.isFunction(obj.template)
+          obj.template(item)
+        else
+          obj.template
+        tpl_path = path.join(@roots.root, tpl)
+        output_path = "#{obj.out(item)}.html"
         compiler = _.find @roots.config.compilers, (c) ->
           _.contains(c.extensions, path.extname(template_path).substring(1))
-        compiler_options = @roots.config[compiler.name] ? {}
+        compiler_opts = _.extend(
+          @roots.config.locals,
+          @roots.config[compiler.name] ? {},
+          _path: output_path,
+          { item: item }
+        )
 
-        compiler.renderFile(
-          template_path,
-          _.extend(
-            @roots.config.locals,
-            compiler_options,
-            _path: _path
-          )).then((res) => @util.write(compiled_file_path, res.result))
+        compiler.renderFile(tpl_path, compiler_opts)
+          .then (res) => @util.write(output_path, res.result)
