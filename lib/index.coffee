@@ -28,10 +28,10 @@ module.exports = (opts) ->
     setup: ->
       fetch_records = (fetch(key, conf) for key, conf of opts)
 
-      W.all(fetch_records).with(@)
-        .then (res) -> W.map(res, apply_hook)
-        .tap (res) -> W.map(res, add_to_locals.bind(@))
-        .tap (res) -> W.map(res, compile_single_views.bind(@))
+      W.all(fetch_records)
+        .then (res) => W.map(res, apply_hook)
+        .tap (res) => W.map(res, add_to_locals.bind(@))
+        .tap (res) => W.map(res, compile_single_views.bind(@))
 
     ###*
      * Fetches the JSON data from a url, file, or data and returns it neatly as
