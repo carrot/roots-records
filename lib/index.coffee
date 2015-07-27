@@ -29,7 +29,7 @@ module.exports = (opts) ->
       fetch_records = (fetch(key, conf) for key, conf of opts)
 
       W.all(fetch_records)
-        .then (res) => W.map(res, apply_hook)
+        .then (res) -> W.map(res, apply_hook)
         .tap (res) => W.map(res, add_to_locals.bind(@))
         .tap (res) => W.map(res, compile_single_views.bind(@))
 
