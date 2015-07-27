@@ -85,7 +85,7 @@ module.exports = (opts) ->
 
     apply_hook = (obj) ->
       if not obj.options.hook then return obj
-      obj.data = obj.options.hook(response)
+      obj.data = obj.options.hook(obj.data)
       return obj
 
     ###*
@@ -101,9 +101,13 @@ module.exports = (opts) ->
      * This needs to be gutted and refactored still
     ###
 
-    compile_single_views = (collection, template, out_fn) ->
-      if not _.isArray(collection)
-        throw new Error "collection must return an array"
+    compile_single_views = (obj) ->
+      if not obj.template or not obj.out then return
+
+      if obj.template and not obj.out
+        throw new Error("You must also provide an 'out' option")
+      if obj.out and not obj.template
+        throw new Error("You must also provide a 'template' option")
 
       W.map collection, (item) =>
         @roots.config.locals.item = item
