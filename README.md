@@ -56,6 +56,21 @@ records
   books: { data: [{ title: 'Wow', author: 'Doge' }] }
 ```
 
+For the `url` option, if you need a bit more control, you can also pass an object instead of a string. The object can have the following values, all optional except for `path`:
+
+```coffee
+records
+  books:
+    url:
+      path: 'http://www.google.com/books'
+      method: 'GET'
+      params: { year: '1980' }
+      headers: { Security: 'secret' }
+      entity: { authorName: 'Darwin' }
+```
+
+For more details on what each option here means and a couple more obscure options, feel free to check the [rest documentation](https://github.com/cujojs/rest/blob/master/docs/interfaces.md#common-request-properties), which is the library internally handling this request.
+
 Note that it is possible to pass multiple different keys to roots-records that fetch data in the same or different ways. For example:
 
 ```coffee
