@@ -26,7 +26,7 @@ module.exports = (opts) ->
      ###
 
     setup: ->
-      fetch_records = (fetch(key, conf) for key, conf of opts)
+      fetch_records = (fetch.call(@, key, conf) for key, conf of opts)
 
       W.all(fetch_records)
         .then (res) -> W.map(res, apply_hook)
@@ -46,7 +46,7 @@ module.exports = (opts) ->
     fetch = (key, opts) ->
       data_promise = switch
         when _.has(opts, 'url') then resolve_url(opts)
-        when _.has(opts, 'file') then resolve_file(opts)
+        when _.has(opts, 'file') then resolve_file.call(@, opts)
         when _.has(opts, 'data') then W.resolve(opts.data)
         else throw new Error("You must provide a 'url', 'file', or 'data' key")
 
@@ -74,7 +74,7 @@ module.exports = (opts) ->
      ###
 
     resolve_file = (opts) ->
-      node.call(fs.readFile.bind(fs), path.resolve(opts.file), 'utf8')
+      node.call(fs.readFile.bind(fs), path.join(@roots.root, opts.file), 'utf8')
         .then (contents) -> JSON.parse(contents)
 
     ###*
