@@ -2,6 +2,7 @@ fs        = require 'fs'
 rest      = require 'rest'
 path      = require 'path'
 W         = require 'when'
+node      = require 'when/node'
 _         = require 'lodash'
 RootsUtil = require 'roots-util'
 
@@ -25,7 +26,7 @@ module.exports = (opts) ->
      ###
 
     setup: ->
-      fetch_records = (get(key, conf) for key, conf of opts)
+      fetch_records = (fetch(key, conf) for key, conf of opts)
 
       W.all(fetch_records).with(@)
         .then (res) -> W.map(res, apply_hook)
@@ -33,43 +34,28 @@ module.exports = (opts) ->
         .tap (res) -> W.map(res, compile_single_views.bind(@))
 
     ###*
-     * Promises to retrieve data, then
-     * stores object in locals hash
-     * @param {String} key - the record key
-     * @param {Object} obj - the key's parameters
+     * Fetches the JSON data from a url, file, or data and returns it neatly as
+     * an object containing the key, options, and resolved data.
+     *
+     * @param {String} key - name of the record being fetched
+     * @param {Object} opts - options provided under the key
+     * @returns {Promise|Object} - a promise for an object with a `key`,
+     * `options`, and `data` values
     ###
 
-    exec = (key, obj) ->
-      get(obj).then (res) =>
-        respond.call(@, key, obj, res)
-      .tap (res) =>
-        if obj.template
-          compile_single_views.call(@,
-            (if obj.collection? then obj.collection(res) else res),
-            obj.template,
-            obj.out
-          )
-
-    ###*
-     * Determines and calls the appropriate function
-     * for retrieving json based on keys in object.
-     * @param {Object} obj - the key's parameters
-    ###
-
-    get = (key, opts) ->
+    fetch = (key, opts) ->
       data_promise = switch
         when opts.hasOwnProperty('url') then resolve_url(opts)
         when opts.hasOwnProperty('file') then resolve_file(opts)
         when opts.hasOwnProperty('data') then W.resolve(opts.data)
-        else throw new Error("Key must be 'url', 'file', or 'data'")
+        else throw new Error("You must provide a 'url', 'file', or 'data' key")
 
       data_promise.then (data) -> { key: key, options: opts, data: data }
 
     ###*
-     * Runs http request for json if URL is passed,
-     * adds result to records, and returns a resolution.
-     * @param {Object} obj - the key's parameters
-     * @param {Function} resolve - function to resolve deferred promise
+     * Makes a request to the provided url, returning the response body as JSON.
+     *
+     * @param {Object} opts - the key's parameters
      ###
 
     resolve_url = (opts) ->
@@ -77,42 +63,24 @@ module.exports = (opts) ->
       error_code = require('rest/interceptor/errorCode')
       client = rest.wrap(mime).wrap(error_code)
 
-      client_opts = { path: opts.url }
-
-      if opts.method then client_opts.method = opts.method
-      if opts.params then client_opts.params = opts.params
-      if opts.headers then client_opts.headers = opts.headers
-      if opts.entity then client_opts.entity = opts.entity
-
-      client(client_opts).then (res) -> res.entity
+      conf = if typeof opts.url is 'string' then { path: opts.url } else opts
+      client(conf).then (res) -> res.entity
 
     ###*
-     * Reads a file if a path is passed, adds result
-     * to records, and returns a resolution.
+     * Reads the file based on a path relative to the project root, returns the
+     * results as JSON.
+     *
      * @param {Object} obj - the key's parameters
-     * @param {Function} resolve - function to resolve deferred promise
      ###
 
-    file = (obj, resolver) ->
-      fs.readFile obj.file, 'utf8', (error, body) ->
-        __parse(body, resolver)
-
-    ###*
-     * If an object is passed, adds object
-     * to records, and returns a resolution.
-     * @param {Object} obj - the key's parameters
-     * @param {Function} resolve - function to resolve deferred promise
-     ###
-
-    data = (obj, resolver) ->
-      resolver.resolve(obj.data)
+    resolve_file = (opts) ->
+      node.call(fs.readFile.bind(fs), path.resolve(opts.file), 'utf8')
+        .then (contents) -> JSON.parse(contents)
 
     ###*
      * If a hook was provided in the config, runs the response through the hook.
      *
-     * @param {String} key - the record key
-     * @param {Object} config - the record's config options
-     * @param {Object} response - the record's actual data
+     * @param {String} obj - record object with a `key`, `options`, and `data`
      ###
 
     apply_hook = (obj) ->
@@ -130,13 +98,7 @@ module.exports = (opts) ->
       @roots.config.locals.records[obj.key] = obj.data
 
     ###*
-     * Promises to compile single views for a given collection using a template
-     * and saves to the path given by the out_fn
-     * @param {Array} collection - the collection from which to create single
-     * views
-     * @param {String} template - path to the template to use
-     * @param {Function} out_fn - returns the path to save the output file given
-     * each item
+     * This needs to be gutted and refactored still
     ###
 
     compile_single_views = (collection, template, out_fn) ->
@@ -162,9 +124,3 @@ module.exports = (opts) ->
             compiler_options,
             _path: _path
           )).then((res) => @util.write(compiled_file_path, res.result))
-
-    __parse = (response, resolver) ->
-      try
-        resolver.resolve(JSON.parse(response))
-      catch error
-        resolver.reject(error)
