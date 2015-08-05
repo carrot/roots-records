@@ -111,14 +111,40 @@ describe 'errors', ->
       done()
 
 describe 'hook', ->
-  it 'hook function should manipulate data'
+  it 'hook function should manipulate data', (done) ->
+    compile_fixture.call @, 'hook', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+
+      json.foo.should.equal('doge')
+
+      done()
 
 describe 'single views', ->
-  it 'should error if template is provided but not out'
-  it 'should error if out is provided but not template'
-  it 'should error if data is not an array and template + out are present'
+
+  it 'should error if template is provided but not out', (done) ->
+    project = new Roots(path.join(_path, 'template_no_out'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("You must also provide an 'out' option")
+      done()
+
+  it 'should error if out is provided but not template', (done) ->
+    project = new Roots(path.join(_path, 'out_no_template'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("You must also provide a 'template' option")
+      done()
+
+  it 'should error if data is not an array and template + out are present', (done) ->
+    project = new Roots(path.join(_path, 'single_views_no_array'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("'books' data must be an array")
+      done()
+
   it 'should resolve template if it is a function or string'
   it 'should include all locals in single post views'
-  it 'should repsect compiler options when compiling single post views'
+  it 'should respect compiler options when compiling single post views'
   it 'should include all other records in single post views'
   it 'should include the correct "item" local in single post views'

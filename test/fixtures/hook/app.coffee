@@ -1,4 +1,4 @@
-records = require '../../../..'
+records = require '../../..'
 
 module.exports =
   ignores: ["**/_*"]
@@ -8,7 +8,7 @@ module.exports =
       books: {
         data: {
           foo: "bar"
-        }, 
+        },
         hook: (obj) ->
           obj.foo = "doge"
           return obj

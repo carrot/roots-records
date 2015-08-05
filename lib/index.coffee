@@ -128,14 +128,15 @@ module.exports = (opts) ->
     ###
 
     compile_single_views = (obj) ->
-      if not obj.template or not obj.out then return
+      opts = obj.options
+      if not opts.template and not opts.out then return
 
-      if obj.template and not obj.out
+      if opts.template and not opts.out
         throw new Error("You must also provide an 'out' option")
-      if obj.out and not obj.template
+      if opts.out and not opts.template
         throw new Error("You must also provide a 'template' option")
-      if not Array.isArray(obj.data)
-        throw new Error("#{obj.key} data must be an array")
+      if not Array.isArray(opts.data)
+        throw new Error("'#{obj.key}' data must be an array")
 
       W.map obj.data, (item) =>
         tpl = if _.isFunction(obj.template)
