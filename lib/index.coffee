@@ -18,7 +18,7 @@ module.exports = (opts) ->
     constructor: (@roots) ->
       @util = new RootsUtil(@roots)
       @roots.config.locals ||= {}
-      @roots.config.locals.records ||= []
+      @roots.config.locals.records ||= {}
 
     ###*
      * Setup extension method loops through objects and

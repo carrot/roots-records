@@ -158,7 +158,30 @@ describe 'single views', ->
 
       done()
 
-  it 'should include all locals in single post views'
-  it 'should respect compiler options when compiling single post views'
-  it 'should include all other records in single post views'
-  it 'should include the correct "item" local in single post views'
+  it 'should include all locals in single post views', (done) ->
+    compile_fixture.call @, 'single_view_locals', =>
+      file = path.join(_path, @public, 'books/testing.html')
+      json = JSON.parse(fs.readFileSync(file, 'utf8'))
+
+      json.title.should.equal('testing')
+      json.path.should.equal('/books/testing.html')
+      json.foo.should.equal('bar')
+
+      done()
+
+  it 'should respect compiler options when compiling single post views', (done) ->
+    compile_fixture.call @, 'single_view_compiler_options', =>
+      contents = fs.readFileSync(path.join(_path, @public, 'books/testing.html'), 'utf8')
+      contents.should.match(/\n/)
+      done()
+
+  it 'should include all other records in single post views', (done) ->
+    compile_fixture.call @, 'single_view_all_records', =>
+      file = path.join(_path, @public, 'books/testing.html')
+      json = JSON.parse(fs.readFileSync(file, 'utf8'))
+
+      json.title.should.equal('testing')
+      json.movies[0].title.should.equal('a great movie')
+      json.books[0].title.should.equal('testing')
+
+      done()

@@ -24,6 +24,7 @@
   "devDependencies": {
     "chai": "3.x",
     "chai-fs": "jenius/chai-fs",
+    "coffee-coverage": "^0.6.2",
     "coffee-script": "1.9.x",
     "coffeelint": "1.x",
     "coveralls": "2.x",
@@ -36,8 +37,8 @@
   "scripts": {
     "test": "npm run lint && mocha",
     "lint": "find lib/ -name '*.coffee' | xargs coffeelint",
-    "coverage": "make build; istanbul cover _mocha --report html -- -R spec && open coverage/index.html && make unbuild",
-    "coveralls": "make build; istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage; make unbuild"
+    "coverage": "istanbul cover _mocha --report html -- -R spec && open coverage/index.html",
+    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
   },
   "engines": {
     "node": ">=0.10.0"
