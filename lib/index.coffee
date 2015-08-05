@@ -47,7 +47,7 @@ module.exports = (opts) ->
       data_promise = switch
         when _.has(opts, 'url') then resolve_url(opts)
         when _.has(opts, 'file') then resolve_file.call(@, opts)
-        when _.has(opts, 'data') then W.resolve(opts.data)
+        when _.has(opts, 'data') then resolve_data(opts)
         else throw new Error("You must provide a 'url', 'file', or 'data' key")
 
       data_promise.then (data) -> { key: key, options: opts, data: data }
@@ -61,10 +61,19 @@ module.exports = (opts) ->
     resolve_url = (opts) ->
       mime = require('rest/interceptor/mime')
       error_code = require('rest/interceptor/errorCode')
-      client = rest.wrap(mime).wrap(error_code)
+      client = rest
+        .wrap(mime)
+        .wrap(error_code)
 
       conf = if typeof opts.url is 'string' then { path: opts.url } else opts
-      client(conf).then (res) -> res.entity
+      client(conf).then (res) ->
+        if not res.entity
+          throw new Error("URL has not returned any content")
+
+        if typeof res.entity isnt 'object'
+          throw new Error("URL did not return JSON")
+
+        res.entity
 
     ###*
      * Reads the file based on a path relative to the project root, returns the
@@ -76,6 +85,18 @@ module.exports = (opts) ->
     resolve_file = (opts) ->
       node.call(fs.readFile.bind(fs), path.join(@roots.root, opts.file), 'utf8')
         .then (contents) -> JSON.parse(contents)
+
+    ###*
+     * Ensures data provided is an object, then resolves it through.
+     *
+     * @param {Object} opts - the key's parameters
+    ###
+    resolve_data = (opts) ->
+      type = typeof opts.data
+      if type isnt 'object'
+        throw new Error("Data provided is a #{type} but must be an object")
+
+      W.resolve(opts.data)
 
     ###*
      * If a hook was provided in the config, runs the response through the hook.

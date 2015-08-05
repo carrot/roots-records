@@ -1,4 +1,4 @@
-records = require '../../../../'
+records = require '../../..'
 
 module.exports =
   ignores: ["**/_*"]

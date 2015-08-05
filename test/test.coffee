@@ -19,51 +19,96 @@ after ->
 
 describe 'url', ->
 
-  before (done) ->
-    compile_fixture.call @, 'basic', =>
+  it 'records should be present and populated', (done) ->
+    compile_fixture.call @, 'url', =>
       index_path = path.join(_path, @public, 'index.html')
-      @json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+
+      json.should.be.a('object')
+      json.items.should.exist
+      json.items.length.should.equal(10)
+
       done()
 
-  it 'records should be present and populated', ->
-    @json.should.be.a('object')
-    @json.items.should.exist
-    @json.items.length.should.equal(10)
+describe 'url with http options', ->
+
+  it 'should POST request and generate an error', (done) ->
+    project = new Roots(path.join(_path, 'url_options'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      if res.error.code is 'ECONNREFUSED' then done() else done(res)
 
 describe 'file', ->
 
-  before (done) ->
+  it 'records should be present and populated', (done) ->
     compile_fixture.call @, 'file', =>
       index_path = path.join(_path, @public, 'index.html')
-      @json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
-      done()
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
 
-  it 'records should be present and populated', ->
-    @json.should.be.an('array')
-    @json[0].title.should.equal("The Great Gatsby")
+      json.should.be.an('array')
+      json[0].title.should.equal("The Great Gatsby")
+
+      done()
 
 describe 'data', ->
 
-  before (done) ->
+  it 'records should be present and populated', (done) ->
     compile_fixture.call @, 'data', =>
       index_path = path.join(_path, @public, 'index.html')
-      @json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+
+      json.foo.should.equal('bar')
+
       done()
 
-  it 'records should be present and populated', ->
-    @json.foo.should.equal('bar')
-
-describe 'url with http options', ->
-  it 'records should be present and populated'
-
 describe 'multiple records', ->
-  it 'should resolve all records if there are more than one'
+
+  it 'should resolve all records if there are more than one', (done) ->
+    compile_fixture.call @, 'multiple_records', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+
+      json.books.length.should.equal(1)
+      json.doges.length.should.equal(2)
+
+      done()
 
 describe 'errors', ->
-  it 'should error if no keys are provided'
-  it 'should error if file is not found'
-  it 'should error if url does not resolve'
-  it 'should error if data provided is not json'
+
+  it 'should error if no keys are provided', (done) ->
+    project = new Roots(path.join(_path, 'invalid_key'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("You must provide a 'url', 'file', or 'data' key")
+      done()
+
+  it 'should error if file is not found', (done) ->
+    project = new Roots(path.join(_path, 'invalid_file'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.match(/ENOENT/)
+      done()
+
+  it 'should error if url does not resolve', (done) ->
+    project = new Roots(path.join(_path, 'invalid_url'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("URL has not returned any content")
+      done()
+
+  it 'should error if url does not return json', (done) ->
+    project = new Roots(path.join(_path, 'no_json_url'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("URL did not return JSON")
+      done()
+
+  it 'should error if data provided is not json', (done) ->
+    project = new Roots(path.join(_path, 'invalid_data'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("Data provided is a string but must be an object")
+      done()
 
 describe 'hook', ->
   it 'hook function should manipulate data'
