@@ -17,10 +17,11 @@ Load remote data into a [roots](http://www.github.com/jenius/roots) project and 
 
   module.exports =
     extensions: [
-      records
+      records(
         books: { url: 'http://www.google.com/books' },
         shoes: { file: 'data/books.json' },
         scores: { data: { home: 1, away: 0 } }
+      )
     ]
 
   # ...
@@ -44,22 +45,25 @@ A resource returning JSON that you would like the data from to be included in yo
 
 ```coffee
 # using a URL
-records
+records(
   books: { url: 'http://www.google.com/books' }
+)
 
 # using a file path
-records
+records(
   books: { file: 'data/books.json' }
+)
 
 # using JSON data
-records
+records(
   books: { data: [{ title: 'Wow', author: 'Doge' }] }
+)
 ```
 
 For the `url` option, if you need a bit more control, you can also pass an object instead of a string. The object can have the following values, all optional except for `path`:
 
 ```coffee
-records
+records(
   books:
     url:
       path: 'http://www.google.com/books'
@@ -67,6 +71,7 @@ records
       params: { year: '1980' }
       headers: { Security: 'secret' }
       entity: { authorName: 'Darwin' }
+)
 ```
 
 For more details on what each option here means and a couple more obscure options, feel free to check the [rest documentation](https://github.com/cujojs/rest/blob/master/docs/interfaces.md#common-request-properties), which is the library internally handling this request.
@@ -74,9 +79,10 @@ For more details on what each option here means and a couple more obscure option
 Note that it is possible to pass multiple different keys to roots-records that fetch data in the same or different ways. For example:
 
 ```coffee
-records
+records(
   books: { url: 'http://www.google.com/books' }
   sodas: { data: ['Dr. Pepper', 'Coke', 'Sprite'] }
+)
 ```
 
 ##### `hook`
@@ -84,10 +90,11 @@ records
 An optional function that receives the JSON response and allows you to make modifications to it before it is injected into your views. For example:
 
 ```coffee
-records
+records(
   data: { foo: 'bar' }
   hook: (data) ->
     data.foo = 'changed!'
+)
 ```
 
 With this modification, the value of `foo` in you views would now be `changed!` rather than `bar`, as it was in the original data passed. This is of course a contrived example, for more complex data, more interesting transformations can be done here.
@@ -97,12 +104,13 @@ With this modification, the value of `foo` in you views would now be `changed!` 
 So imagine this. You are making a blog, and roots-records is pulling from your blog's API and returning an array of blog posts. In addition to using the locals to list out an index of your posts, you also want to compile a standalone single page view for the each full blog post. Roots records can still handle this with a set of three options, You can use the `template` option to specify a single view template which will be used to render out each single item in your collection. This can be a string or a function. The `out` option is a function that receives each individual option in your collection as an argument. You should return the path, relative to the project root, to which you'd like to write your single view. For example:
 
 ```coffee
-records
+records(
   books:
     url: 'http://www.google.com/books',
     hook: (res) -> res.response.books,
     template: "views/_book.jade",
     out: (book) -> "/books/#{slugify(book.title)}"
+)
 ```
 
 Note that the `slugify` function in the last piece is fictional, although you can find similar string transformation functionality in the [underscore.string library](https://github.com/epeli/underscore.string) if you need it. Also note that in order for this single page views to work correctly, the data you are returning *must be an array* -- you can also use the `hook` option to make this transformation if necessary, as shown in the example above.
