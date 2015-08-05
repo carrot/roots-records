@@ -128,25 +128,25 @@ module.exports = (opts) ->
     ###
 
     compile_single_views = (obj) ->
-      opts = obj.options
-      if not opts.template and not opts.out then return
+      obj_opts = obj.options
+      if not obj_opts.template and not obj_opts.out then return
 
-      if opts.template and not opts.out
+      if obj_opts.template and not obj_opts.out
         throw new Error("You must also provide an 'out' option")
-      if opts.out and not opts.template
+      if obj_opts.out and not obj_opts.template
         throw new Error("You must also provide a 'template' option")
-      if not Array.isArray(opts.data)
+      if not Array.isArray(obj.data)
         throw new Error("'#{obj.key}' data must be an array")
 
       W.map obj.data, (item) =>
-        tpl = if _.isFunction(obj.template)
-          obj.template(item)
+        tpl = if _.isFunction(obj_opts.template)
+          obj_opts.template(item)
         else
-          obj.template
+          obj_opts.template
         tpl_path = path.join(@roots.root, tpl)
-        output_path = "#{obj.out(item)}.html"
+        output_path = "#{obj_opts.out(item)}.html"
         compiler = _.find @roots.config.compilers, (c) ->
-          _.contains(c.extensions, path.extname(template_path).substring(1))
+          _.contains(c.extensions, path.extname(tpl_path).substring(1))
         compiler_opts = _.extend(
           @roots.config.locals,
           @roots.config[compiler.name] ? {},

@@ -1,4 +1,4 @@
-records = require '../../../..'
+records = require '../../..'
 S       = require 'underscore.string'
 
 module.exports =
@@ -8,7 +8,7 @@ module.exports =
     records({
       books: {
         out: (book) -> "/books/#{S.slugify(book.title)}"
-        collection: (d) -> d.response
+        hook: (d) -> d.response
         template: "views/_book.jade"
         data: {
           response: [
@@ -29,7 +29,7 @@ module.exports =
       },
       tvshows: {
         out: (tvshow) -> "/tvshows/#{S.slugify(tvshow.title)}"
-        collection: (d) -> d.response
+        hook: (d) -> d.response
         template: (tvshow) ->
           if tvshow.template then "views/_tvshow_#{tvshow.template}.jade" else "views/_tvshow.jade"
         data: {

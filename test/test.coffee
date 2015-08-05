@@ -143,7 +143,21 @@ describe 'single views', ->
       res.message.should.equal("'books' data must be an array")
       done()
 
-  it 'should resolve template if it is a function or string'
+  it 'should resolve template if it is a function or string', (done) ->
+    compile_fixture.call @, 'single_view', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+
+      json.length.should.equal(3)
+
+      path.join(_path, @public, 'books/to-kill-a-mockingbird.html').should.be.a.file()
+      path.join(_path, @public, 'books/inherent-vice.html').should.be.a.file()
+      path.join(_path, @public, 'books/the-windup-bird-chronicle.html').should.be.a.file()
+      path.join(_path, @public, 'tvshows/the-lost-room.html').should.have.content.that.match(/default/)
+      path.join(_path, @public, 'tvshows/fringe.html').should.have.content.that.match(/dynamic/)
+
+      done()
+
   it 'should include all locals in single post views'
   it 'should respect compiler options when compiling single post views'
   it 'should include all other records in single post views'
