@@ -1,7 +1,8 @@
 fs        = require 'fs'
-request   = require 'request'
+rest      = require 'rest'
 path      = require 'path'
 W         = require 'when'
+node      = require 'when/node'
 _         = require 'lodash'
 RootsUtil = require 'roots-util'
 
@@ -17,7 +18,7 @@ module.exports = (opts) ->
     constructor: (@roots) ->
       @util = new RootsUtil(@roots)
       @roots.config.locals ||= {}
-      @roots.config.locals.records ||= []
+      @roots.config.locals.records ||= {}
 
     ###*
      * Setup extension method loops through objects and
@@ -25,124 +26,133 @@ module.exports = (opts) ->
      ###
 
     setup: ->
-      @roots.__records = []
-      for key, obj of opts
-        @roots.__records.push(exec.call(@, key, obj))
-      W.all @roots.__records
+      fetch_records = (fetch.call(@, key, conf) for key, conf of opts)
+
+      W.all(fetch_records)
+        .then (res) -> W.map(res, apply_hook)
+        .tap (res) => W.map(res, add_to_locals.bind(@))
+        .tap (res) => W.map(res, compile_single_views.bind(@))
 
     ###*
-     * Promises to retrieve data, then
-     * stores object in locals hash
-     * @param {String} key - the record key
-     * @param {Object} obj - the key's parameters
+     * Fetches the JSON data from a url, file, or data and returns it neatly as
+     * an object containing the key, options, and resolved data.
+     *
+     * @param {String} key - name of the record being fetched
+     * @param {Object} opts - options provided under the key
+     * @returns {Promise|Object} - a promise for an object with a `key`,
+     * `options`, and `data` values
     ###
 
-    exec = (key, obj) ->
-      get(obj).tap (res) =>
-        respond.call(@, key, obj, res)
-      .then (res) =>
-        if obj.template
-          compile_single_views.call(@,
-            obj.collection(res),
-            obj.template,
-            obj.out
-          )
+    fetch = (key, opts) ->
+      data_promise = switch
+        when _.has(opts, 'url') then resolve_url(opts)
+        when _.has(opts, 'file') then resolve_file.call(@, opts)
+        when _.has(opts, 'data') then resolve_data(opts)
+        else throw new Error("You must provide a 'url', 'file', or 'data' key")
+
+      data_promise.then (data) -> { key: key, options: opts, data: data }
 
     ###*
-     * Determines and calls the appropriate function
-     * for retrieving json based on keys in object.
+     * Makes a request to the provided url, returning the response body as JSON.
+     *
+     * @param {Object} opts - the key's parameters
+     ###
+
+    resolve_url = (opts) ->
+      mime = require('rest/interceptor/mime')
+      error_code = require('rest/interceptor/errorCode')
+      client = rest
+        .wrap(mime)
+        .wrap(error_code)
+
+      conf = if typeof opts.url is 'string' then { path: opts.url } else opts
+      client(conf).then (res) ->
+        if not res.entity
+          throw new Error("URL has not returned any content")
+
+        if typeof res.entity isnt 'object'
+          throw new Error("URL did not return JSON")
+
+        res.entity
+
+    ###*
+     * Reads the file based on a path relative to the project root, returns the
+     * results as JSON.
+     *
      * @param {Object} obj - the key's parameters
+     ###
+
+    resolve_file = (opts) ->
+      node.call(fs.readFile.bind(fs), path.join(@roots.root, opts.file), 'utf8')
+        .then (contents) -> JSON.parse(contents)
+
+    ###*
+     * Ensures data provided is an object, then resolves it through.
+     *
+     * @param {Object} opts - the key's parameters
+    ###
+    resolve_data = (opts) ->
+      type = typeof opts.data
+      if type isnt 'object'
+        throw new Error("Data provided is a #{type} but must be an object")
+
+      W.resolve(opts.data)
+
+    ###*
+     * If a hook was provided in the config, runs the response through the hook.
+     *
+     * @param {String} obj - record object with a `key`, `options`, and `data`
+     ###
+
+    apply_hook = (obj) ->
+      if not obj.options.hook then return obj
+      obj.data = obj.options.hook(obj.data)
+      return obj
+
+    ###*
+     * Given a resolved records object, adds it to the view's locals.
+     *
+     * @param {Object} obj - records object, containing a `key` and `data`
     ###
 
-    get = (obj) ->
-      d = W.defer()
-
-      if obj.url?
-        url(obj, d.resolver)
-      else if obj.file?
-        file(obj, d.resolver)
-      else if obj.data?
-        data(obj, d.resolver)
-      else
-        throw new Error "A valid key is required"
-
-      return d.promise
+    add_to_locals = (obj) ->
+      @roots.config.locals.records[obj.key] = obj.data
 
     ###*
-     * Runs http request for json if URL is passed,
-     * adds result to records, and returns a resolution.
-     * @param {Object} obj - the key's parameters
-     * @param {Function} resolve - function to resolve deferred promise
-     ###
-
-    url = (obj, resolver) ->
-      request obj.url, (error, response, body) ->
-        __parse(body, resolver)
-
-    ###*
-     * Reads a file if a path is passed, adds result
-     * to records, and returns a resolution.
-     * @param {Object} obj - the key's parameters
-     * @param {Function} resolve - function to resolve deferred promise
-     ###
-
-    file = (obj, resolver) ->
-      fs.readFile obj.file, 'utf8', (error, body) ->
-        __parse(body, resolver)
-
-    ###*
-     * If an object is passed, adds object
-     * to records, and returns a resolution.
-     * @param {Object} obj - the key's parameters
-     * @param {Function} resolve - function to resolve deferred promise
-     ###
-
-    data = (obj, resolver) ->
-      resolver.resolve(obj.data)
-
-    ###*
-     * Takes object and adds to records object in config.locals
-     * @param {String} key - the record key
-     * @param {Object} object - the key's parameters
-     * @param {Object} response - the object to add
-     ###
-
-    respond = (key, obj, response) ->
-      response = if obj.hook then obj.hook(response) else response
-      @roots.config.locals.records[key] = response
-
-    ###*
-     * Promises to compile single views for a given collection using a template
-     * and saves to the path given by the out_fn
-     * @param {Array} collection - the collection from which to create single
-     * views
-     * @param {String} template - path to the template to use
-     * @param {Function} out_fn - returns the path to save the output file given
-     * each item
+     * Given a records object, if that object has `template` and `out` keys, and
+     * its data is an array, iterates through its data, creating a single view
+     * for each item in the array using the template provided in the `template`
+     * value, and writing to the path provided in the `out` value.
+     *
+     * @param {Object} obj - record object with a `key`, `options`, and `data`
     ###
 
-    compile_single_views = (collection, template, out_fn) ->
-      if not _.isArray(collection)
-        throw new Error "collection must return an array"
+    compile_single_views = (obj) ->
+      obj_opts = obj.options
+      if not obj_opts.template and not obj_opts.out then return
 
-      W.map collection, (item) =>
-        @roots.config.locals.item = item
-        template_path = path.join(
-          @roots.root,
-          if _.isFunction(template) then template(item) else template
-        )
-        compiled_file_path = "#{out_fn(item)}.html"
-        _path = "/#{compiled_file_path.replace(path.sep, '/')}"
+      if obj_opts.template and not obj_opts.out
+        throw new Error("You must also provide an 'out' option")
+      if obj_opts.out and not obj_opts.template
+        throw new Error("You must also provide a 'template' option")
+      if not Array.isArray(obj.data)
+        throw new Error("'#{obj.key}' data must be an array")
+
+      W.map obj.data, (item) =>
+        tpl = if _.isFunction(obj_opts.template)
+          obj_opts.template(item)
+        else
+          obj_opts.template
+        tpl_path = path.join(@roots.root, tpl)
+        output_path = "#{obj_opts.out(item)}.html"
         compiler = _.find @roots.config.compilers, (c) ->
-          _.contains(c.extensions, path.extname(template_path).substring(1))
-        compiler_options = @roots.config[compiler.name] ? {}
-        compiler.renderFile(
-          template_path,
-          _.extend(@roots.config.locals, compiler_options,_path: _path)
-          ).then((res) => @util.write(compiled_file_path, res.result))
+          _.contains(c.extensions, path.extname(tpl_path).substring(1))
+        compiler_opts = _.extend(
+          @roots.config.locals,
+          @roots.config[compiler.name] ? {},
+          _path: output_path,
+          { item: item }
+        )
 
-    __parse = (response, resolver) ->
-      try
-        resolver.resolve(JSON.parse(response))
-      catch error
-        resolver.reject(error)
+        compiler.renderFile(tpl_path, compiler_opts)
+          .then (res) => @util.write(output_path, res.result)

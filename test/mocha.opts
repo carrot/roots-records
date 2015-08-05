@@ -1,3 +1,5 @@
 --reporter spec
 --compilers coffee:coffee-script/register
+--require coffee-coverage/register-istanbul
+--require test/support/index
 --timeout 50000

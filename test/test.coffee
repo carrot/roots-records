@@ -1,147 +1,187 @@
-Roots      = require "roots"
-path       = require "path"
-should     = require "should"
-fs         = require "fs"
-glob       = require "glob"
-W          = require "when"
-nodefn     = require "when/node"
-run        = require("child_process").exec
-_fixtures  = path.join(__dirname, 'fixtures')
-RootsUtil  = require "roots-util"
-_roots     = path.join(_fixtures, 'roots')
-_projects  = {
-  url: path.join(_roots, "url"),
-  file: path.join(_roots, "file"),
-  data: path.join(_roots, "data"),
-  data_hook: path.join(_roots, "data_hook"),
-  invalid_key: path.join(_roots, "invalid_key"),
-  invalid_url: path.join(_roots, "invalid_url"),
-  invalid_file: path.join(_roots, "invalid_file")
-  single_view: path.join(_roots, "single_view")
-  invalid_collection: path.join(_roots, "invalid_collection")
-}
+path      = require "path"
+fs        = require "fs"
+RootsUtil = require 'roots-util'
+h         = new RootsUtil.Helpers(base: _path)
 
-init_roots = (base_path, done) ->
-  roots = new Roots(base_path)
-  roots.on('error', done).on('done', -> done())
-  roots.compile()
-  { roots: roots, helpers: new RootsUtil.Helpers(base: base_path) }
+# setup, teardown, and utils
 
-describe 'records', ->
+compile_fixture = (fixture_name, done) ->
+  @public = path.join(fixture_name, 'public')
+  h.project.compile(Roots, fixture_name).done(done)
 
-  before (done) ->
-    helpers = new RootsUtil.Helpers(base: _fixtures)
-    helpers.project.install_dependencies("*/*", done)
+before (done) ->
+  h.project.install_dependencies('*', done)
 
-  describe 'url', ->
+after ->
+  h.project.remove_folders('**/public')
 
-    before (done) ->
-      @_ = init_roots _projects.url, done
+# tests
 
-    describe 'locals object', ->
+describe 'url', ->
 
-      it "should contain 'records' key", ->
-        @_.roots.config.locals.should.have.property("records")
+  it 'records should be present and populated', (done) ->
+    compile_fixture.call @, 'url', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
 
-      describe "records object", ->
+      json.should.be.a('object')
+      json.items.should.exist
+      json.items.length.should.equal(10)
 
-        it "should contain 'books' key", ->
-          @_.roots.config.locals.records.should.have.property("books")
+      done()
 
-    describe 'compiled template', ->
+describe 'url with http options', ->
 
-      it "should contain 'books'", ->
-        @_.helpers.file.contains(path.join("public", "index.html"), "books").should.be.ok
+  it 'should POST request and generate an error', (done) ->
+    project = new Roots(path.join(_path, 'url_options'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      if res.error.code is 'ECONNREFUSED' then done() else done(res)
 
-  describe 'file', ->
+describe 'file', ->
 
-    before (done) ->
-      @_ = init_roots _projects.file, done
+  it 'records should be present and populated', (done) ->
+    compile_fixture.call @, 'file', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
 
-    describe 'locals object', ->
+      json.should.be.an('array')
+      json[0].title.should.equal("The Great Gatsby")
 
-      it "should contain 'records' key", ->
-        @_.roots.config.locals.should.have.property("records")
+      done()
 
-      describe "records object", ->
+describe 'data', ->
 
-        it "should contain 'books' key", ->
-          @_.roots.config.locals.records.should.have.property("books")
+  it 'records should be present and populated', (done) ->
+    compile_fixture.call @, 'data', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
 
-    describe 'compiled template', ->
+      json.foo.should.equal('bar')
 
-      it "should have {foo: 'bar'} json", ->
-        @_.helpers.file.contains(path.join("public", "index.html"), JSON.stringify({foo: "bar"})).should.be.ok
+      done()
 
-  describe 'data', ->
+describe 'multiple records', ->
 
-    before (done) ->
-      @_ = init_roots _projects.data, done
+  it 'should resolve all records if there are more than one', (done) ->
+    compile_fixture.call @, 'multiple_records', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
 
-    describe 'locals object', ->
+      json.books.length.should.equal(1)
+      json.doges.length.should.equal(2)
 
-      it "should contain 'records' key", ->
-        @_.roots.config.locals.should.have.property("records")
+      done()
 
-      describe "records object", ->
+describe 'errors', ->
 
-        it "should contain 'books' key", ->
-          @_.roots.config.locals.records.should.have.property("books")
+  it 'should error if no keys are provided', (done) ->
+    project = new Roots(path.join(_path, 'invalid_key'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("You must provide a 'url', 'file', or 'data' key")
+      done()
 
-    describe 'compiled template', ->
+  it 'should error if file is not found', (done) ->
+    project = new Roots(path.join(_path, 'invalid_file'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.match(/ENOENT/)
+      done()
 
-      it "should have {foo: 'bar'} json", ->
-        @_.helpers.file.contains(path.join("public", "index.html"), JSON.stringify({foo: "bar"})).should.be.ok
+  it 'should error if url does not resolve', (done) ->
+    project = new Roots(path.join(_path, 'invalid_url'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("URL has not returned any content")
+      done()
 
-  describe 'invalid key', ->
+  it 'should error if url does not return json', (done) ->
+    project = new Roots(path.join(_path, 'no_json_url'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("URL did not return JSON")
+      done()
 
-    it 'should throw an error', (done) ->
-      new Roots(_projects.invalid_key).compile()
-        .done(done(), should.exist)
+  it 'should error if data provided is not json', (done) ->
+    project = new Roots(path.join(_path, 'invalid_data'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("Data provided is a string but must be an object")
+      done()
 
-  describe 'invalid url', ->
+describe 'hook', ->
+  it 'hook function should manipulate data', (done) ->
+    compile_fixture.call @, 'hook', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
 
-    it 'should throw an error', (done) ->
-      new Roots(_projects.invalid_url).compile()
-        .catch()
-        .done(done())
+      json.foo.should.equal('doge')
 
-  describe 'invalid file', ->
+      done()
 
-    it 'should throw an error', (done) ->
-      new Roots(_projects.invalid_file).compile()
-        .catch(should.exist)
-        .done(done())
+describe 'single views', ->
 
-  describe 'data hook', ->
-    before (done) ->
-      @_ = init_roots _projects.data_hook, done
+  it 'should error if template is provided but not out', (done) ->
+    project = new Roots(path.join(_path, 'template_no_out'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("You must also provide an 'out' option")
+      done()
 
-    it 'should call the hook fn to manipulate the data before passing into views', ->
-      @_.helpers.file.contains(path.join("public", "index.html"), JSON.stringify({foo: 'doge'})).should.be.ok
+  it 'should error if out is provided but not template', (done) ->
+    project = new Roots(path.join(_path, 'out_no_template'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("You must also provide a 'template' option")
+      done()
 
-  describe 'single page views', ->
-    before (done) ->
-      @_ = init_roots _projects.single_view, done
-      @test_path = path.join("public", "books", "to-kill-a-mockingbird.html")
-      @test_path_dynamic = path.join("public", "tvshows", "fringe.html")
+  it 'should error if data is not an array and template + out are present', (done) ->
+    project = new Roots(path.join(_path, 'single_views_no_array'))
+    project.on('error', ->)
+    project.compile().catch (res) ->
+      res.message.should.equal("'books' data must be an array")
+      done()
 
-    it 'should compile a single page view', ->
-      @_.helpers.file.exists(@test_path).should.be.true
+  it 'should resolve template if it is a function or string', (done) ->
+    compile_fixture.call @, 'single_view', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
 
-    it 'should pass the correct locals for that single view', ->
-      @_.helpers.file.contains(@test_path, 'Harper Lee').should.be.true
+      json.length.should.equal(3)
 
-    it 'should pass the _path view helper for that single view', ->
-      @_.helpers.file.contains(@test_path, '/books/to-kill-a-mockingbird.html')
+      path.join(_path, @public, 'books/to-kill-a-mockingbird.html').should.be.a.file()
+      path.join(_path, @public, 'books/inherent-vice.html').should.be.a.file()
+      path.join(_path, @public, 'books/the-windup-bird-chronicle.html').should.be.a.file()
+      path.join(_path, @public, 'tvshows/the-lost-room.html').should.have.content.that.match(/default/)
+      path.join(_path, @public, 'tvshows/fringe.html').should.have.content.that.match(/dynamic/)
 
-    it "should use the adapter config settings like 'pretty:true'", ->
-      @_.helpers.file.contains(@test_path, '\n').should.be.true
+      done()
 
-    it 'should compile with a dynamic template path', ->
-      @_.helpers.file.contains(@test_path_dynamic, 'dynamic').should.be.true
+  it 'should include all locals in single post views', (done) ->
+    compile_fixture.call @, 'single_view_locals', =>
+      file = path.join(_path, @public, 'books/testing.html')
+      json = JSON.parse(fs.readFileSync(file, 'utf8'))
 
-    it 'should throw an error if collection is not an array', (done) ->
-      new Roots(_projects.invalid_collection).compile()
-        .catch(should.exist)
-        .done(done())
+      json.title.should.equal('testing')
+      json.path.should.equal('/books/testing.html')
+      json.foo.should.equal('bar')
+
+      done()
+
+  it 'should respect compiler options when compiling single post views', (done) ->
+    compile_fixture.call @, 'single_view_compiler_options', =>
+      contents = fs.readFileSync(path.join(_path, @public, 'books/testing.html'), 'utf8')
+      contents.should.match(/\n/)
+      done()
+
+  it 'should include all other records in single post views', (done) ->
+    compile_fixture.call @, 'single_view_all_records', =>
+      file = path.join(_path, @public, 'books/testing.html')
+      json = JSON.parse(fs.readFileSync(file, 'utf8'))
+
+      json.title.should.equal('testing')
+      json.movies[0].title.should.equal('a great movie')
+      json.books[0].title.should.equal('testing')
+
+      done()
