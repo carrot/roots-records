@@ -101,7 +101,7 @@ With this modification, the value of `foo` in you views would now be `changed!` 
 
 ##### `template` and `out`
 
-So imagine this. You are making a blog, and roots-records is pulling from your blog's API and returning an array of blog posts. In addition to using the locals to list out an index of your posts, you also want to compile a standalone single page view for the each full blog post. Roots records can still handle this with a set of three options, You can use the `template` option to specify a single view template which will be used to render out each single item in your collection. This can be a string or a function. The `out` option is a function that receives each individual option in your collection as an argument. You should return the path, relative to the project root, to which you'd like to write your single view. For example:
+So imagine this. You are making a blog, and roots-records is pulling from your blog's API and returning an array of blog posts. In addition to using the locals to list out an index of your posts, you also want to compile a standalone single page view for the each full blog post. Roots records can still handle this with a set of two options, You can use the `template` option to specify a single view template which will be used to render out each single item in your collection. This can be a string or a function. The `out` option is a function that receives each individual option in your collection as an argument. You should return the path, relative to the project root, to which you'd like to write your single view. For example:
 
 ```coffee
 records(
