@@ -32,11 +32,24 @@ describe 'url', ->
 
 describe 'url with http options', ->
 
+  it 'should pass the right path with option', (done) ->
+    compile_fixture.call @, 'url', =>
+      index_path = path.join(_path, @public, 'index_with_options.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+
+      json.should.be.a('object')
+      json.items.should.exist
+      json.items.length.should.equal(10)
+
+      done()
+
   it 'should POST request and generate an error', (done) ->
     project = new Roots(path.join(_path, 'url_options'))
     project.on('error', ->)
     project.compile().catch (res) ->
-      if res.error.code is 'ECONNREFUSED' then done() else done(res)
+      res.status.code.should.equal(404)
+
+      done()
 
 describe 'file', ->
 

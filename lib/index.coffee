@@ -65,7 +65,11 @@ module.exports = (opts) ->
         .wrap(mime)
         .wrap(error_code)
 
-      conf = if typeof opts.url is 'string' then { path: opts.url } else opts
+      if typeof opts.url is 'string'
+        conf = { path: opts.url }
+      else
+        conf = opts.url
+
       client(conf).then (res) ->
         if not res.entity
           throw new Error("URL has not returned any content")
