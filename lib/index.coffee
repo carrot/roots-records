@@ -8,6 +8,8 @@ RootsUtil = require 'roots-util'
 
 module.exports = (opts) ->
 
+  opts.namespace = opts.namespace ? 'records'
+
   class Records
 
     ###*
@@ -18,7 +20,6 @@ module.exports = (opts) ->
     constructor: (@roots) ->
       @util = new RootsUtil(@roots)
       @roots.config.locals ||= {}
-      @roots.config.locals.records ||= {}
 
     ###*
      * Setup extension method loops through objects and
@@ -26,7 +27,9 @@ module.exports = (opts) ->
      ###
 
     setup: ->
-      fetch_records = (fetch.call(@, key, conf) for key, conf of opts)
+      fetch_records = for key, conf of opts
+        if key == 'namespace' then continue
+        fetch.call(@, key, conf)
 
       W.all(fetch_records)
         .then (res) -> W.map(res, apply_hook)
@@ -120,7 +123,9 @@ module.exports = (opts) ->
     ###
 
     add_to_locals = (obj) ->
-      @roots.config.locals.records[obj.key] = obj.data
+      namespace = obj.options.namespace ? opts.namespace
+      @roots.config.locals[namespace] ?= {}
+      @roots.config.locals[namespace][obj.key] = obj.data
 
     ###*
      * Given a records object, if that object has `template` and `out` keys, and

@@ -198,3 +198,16 @@ describe 'single views', ->
       json.books[0].title.should.equal('testing')
 
       done()
+
+describe 'namespace', ->
+
+  it '`records` should be under different namespaces', (done) ->
+    compile_fixture.call @, 'namespace', =>
+      index_path = path.join(_path, @public, 'index.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+
+      json.should.be.an('object')
+      json.title_1.should.equal("The Great Gatsby")
+      json.title_2.should.equal("The Great Gatsby")
+
+      done()
