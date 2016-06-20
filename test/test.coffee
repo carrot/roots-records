@@ -52,9 +52,12 @@ describe 'url with http options', ->
       done()
 
 describe 'url with concurrency limiting', ->
+  duration_limited = 0
 
   it 'records should be present and populated', (done) ->
-    compile_fixture.call @, 'url_limited', =>
+    start = Date.now()
+    compile_fixture.call @, 'url_concurrency_limited_to_2', =>
+      duration_limited = Date.now() - start
       index_path = path.join(_path, @public, 'index_with_options.html')
       json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
 
@@ -63,6 +66,13 @@ describe 'url with concurrency limiting', ->
       json[2].items.should.exist
       json[2].items.length.should.equal(10)
 
+      done()
+
+  it 'should take less time when concurrency has a higher limit', (done) ->
+    start = Date.now()
+    compile_fixture.call @, 'url_concurrency_limited_to_4', ->
+      duration = Date.now() - start
+      duration.should.be.lessThan(duration_limited)
       done()
 
 describe 'file', ->
