@@ -5,8 +5,9 @@ W         = require 'when'
 node      = require 'when/node'
 _         = require 'lodash'
 RootsUtil = require 'roots-util'
+cwait     = require 'cwait'
 
-module.exports = (opts) ->
+module.exports = (opts, requestLimit) ->
 
   class Records
 
@@ -19,6 +20,8 @@ module.exports = (opts) ->
       @util = new RootsUtil(@roots)
       @roots.config.locals ||= {}
       @roots.config.locals.records ||= {}
+
+      @queue = requestLimit && new cwait.TaskQueue(Promise, requestLimit)
 
     ###*
      * Setup extension method loops through objects and
@@ -45,7 +48,7 @@ module.exports = (opts) ->
 
     fetch = (key, opts) ->
       data_promise = switch
-        when _.has(opts, 'url') then resolve_url(opts)
+        when _.has(opts, 'url') then resolve_url.call(@, opts)
         when _.has(opts, 'file') then resolve_file.call(@, opts)
         when _.has(opts, 'data') then resolve_data(opts)
         else throw new Error("You must provide a 'url', 'file', or 'data' key")
@@ -64,13 +67,14 @@ module.exports = (opts) ->
       client = rest
         .wrap(mime)
         .wrap(error_code)
+      req = if requestLimit then @queue.wrap(client) else client
 
       if typeof opts.url is 'string'
         conf = { path: opts.url }
       else
         conf = opts.url
 
-      client(conf).then (res) ->
+      req(conf).then (res) ->
         if not res.entity
           throw new Error("URL has not returned any content")
 

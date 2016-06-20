@@ -51,6 +51,20 @@ describe 'url with http options', ->
 
       done()
 
+describe 'url with cwait limiting', ->
+
+  it 'records should be present and populated', (done) ->
+    compile_fixture.call @, 'url_limited', =>
+      index_path = path.join(_path, @public, 'index_with_options.html')
+      json = JSON.parse(fs.readFileSync(index_path, 'utf8'))
+
+      json.should.be.a('array')
+      json.length.should.equal(5)
+      json[2].items.should.exist
+      json[2].items.length.should.equal(10)
+
+      done()
+
 describe 'file', ->
 
   it 'records should be present and populated', (done) ->

@@ -16,6 +16,7 @@
   },
   "main": "lib",
   "dependencies": {
+    "cwait": "1.x",
     "lodash": "3.x",
     "rest": "1.x",
     "roots-util": "0.1.x",
