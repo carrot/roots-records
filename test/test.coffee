@@ -51,7 +51,7 @@ describe 'url with http options', ->
 
       done()
 
-describe 'url with cwait limiting', ->
+describe 'url with concurrency limiting', ->
 
   it 'records should be present and populated', (done) ->
     compile_fixture.call @, 'url_limited', =>

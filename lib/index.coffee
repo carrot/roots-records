@@ -5,9 +5,9 @@ W         = require 'when'
 node      = require 'when/node'
 _         = require 'lodash'
 RootsUtil = require 'roots-util'
-cwait     = require 'cwait'
+guard     = require 'when/guard'
 
-module.exports = (opts, requestLimit) ->
+module.exports = (opts) ->
 
   class Records
 
@@ -21,7 +21,8 @@ module.exports = (opts, requestLimit) ->
       @roots.config.locals ||= {}
       @roots.config.locals.records ||= {}
 
-      @queue = requestLimit && new cwait.TaskQueue(Promise, requestLimit)
+      @limitConcurrency = opts.limitConcurrency
+      @queue = @limitConcurrency && guard.bind(null, guard.n(@limitConcurrency))
 
     ###*
      * Setup extension method loops through objects and
@@ -29,7 +30,7 @@ module.exports = (opts, requestLimit) ->
      ###
 
     setup: ->
-      fetch_records = (fetch.call(@, key, conf) for key, conf of opts)
+      fetch_records = (fetch.call(@, key, conf) for key, conf of opts when key isnt 'limitConcurrency')
 
       W.all(fetch_records)
         .then (res) -> W.map(res, apply_hook)
@@ -67,7 +68,7 @@ module.exports = (opts, requestLimit) ->
       client = rest
         .wrap(mime)
         .wrap(error_code)
-      req = if requestLimit then @queue.wrap(client) else client
+      req = if @limitConcurrency then @queue(client) else client
 
       if typeof opts.url is 'string'
         conf = { path: opts.url }
