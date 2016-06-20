@@ -30,7 +30,11 @@ module.exports = (opts) ->
      ###
 
     setup: ->
-      fetch_records = (fetch.call(@, key, conf) for key, conf of opts when key isnt 'limitConcurrency')
+      fetch_records = (
+        fetch.call(
+          @, key, conf
+        ) for key, conf of opts when key isnt 'limitConcurrency'
+      )
 
       W.all(fetch_records)
         .then (res) -> W.map(res, apply_hook)
