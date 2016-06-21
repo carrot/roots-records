@@ -5,6 +5,7 @@ W         = require 'when'
 node      = require 'when/node'
 _         = require 'lodash'
 RootsUtil = require 'roots-util'
+guard     = require 'when/guard'
 
 module.exports = (opts) ->
 
@@ -20,13 +21,20 @@ module.exports = (opts) ->
       @roots.config.locals ||= {}
       @roots.config.locals.records ||= {}
 
+      @limitConcurrency = opts.limitConcurrency
+      @queue = @limitConcurrency && guard.bind(null, guard.n(@limitConcurrency))
+
     ###*
      * Setup extension method loops through objects and
      * returns a promise to get all data and store.
      ###
 
     setup: ->
-      fetch_records = (fetch.call(@, key, conf) for key, conf of opts)
+      fetch_records = (
+        fetch.call(
+          @, key, conf
+        ) for key, conf of opts when key isnt 'limitConcurrency'
+      )
 
       W.all(fetch_records)
         .then (res) -> W.map(res, apply_hook)
@@ -45,7 +53,7 @@ module.exports = (opts) ->
 
     fetch = (key, opts) ->
       data_promise = switch
-        when _.has(opts, 'url') then resolve_url(opts)
+        when _.has(opts, 'url') then resolve_url.call(@, opts)
         when _.has(opts, 'file') then resolve_file.call(@, opts)
         when _.has(opts, 'data') then resolve_data(opts)
         else throw new Error("You must provide a 'url', 'file', or 'data' key")
@@ -64,13 +72,14 @@ module.exports = (opts) ->
       client = rest
         .wrap(mime)
         .wrap(error_code)
+      req = if @limitConcurrency then @queue(client) else client
 
       if typeof opts.url is 'string'
         conf = { path: opts.url }
       else
         conf = opts.url
 
-      client(conf).then (res) ->
+      req(conf).then (res) ->
         if not res.entity
           throw new Error("URL has not returned any content")
 
