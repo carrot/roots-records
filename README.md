@@ -129,6 +129,20 @@ In a jade template, this example would simply print out the contents of the `boo
 
 If you are using single view templates through the `template` and `out` options, you can access all data as usual through `records`, and additionally will find an `item` local, through which you can access the data for the specific item in the collection that the view is for.
 
+### Managing Concurrency
+
+If you're using `roots-records` to build a large site, you can quickly get to a point where many API requests are being generated simultaneously. This can lead to memory issues or failed requests, particularly if there is any rate-limiting in place on your API server. In order to address this, you can limit the concurrency of all `url` requests, effectively queueing them. Simply pass a number, representing the maximum number of requests that can be ongoing concurrently, under the key `limitConcurrency` in the main options object:
+
+```coffee
+records(
+  books: { url: 'http://www.google.com/books' }
+  moreBooks: { url: 'http://www.google.com/books' }
+  evenMoreBooks: { url: 'http://www.google.com/books' }
+  otherBooks: { url: 'http://www.google.com/books' }
+  limitConcurrency: 2
+)
+```
+
 ### License & Contributing
 
 - Details on the license [can be found here](LICENSE.md)
