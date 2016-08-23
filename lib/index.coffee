@@ -115,7 +115,7 @@ module.exports = (opts) ->
       return obj
 
     ###*
-     * If a write string option was provided in the config, write out the 
+     * If a write string option was provided in the config, write out the
      * retrieved data to the configured file for later usage in the generated
      * site
      *
@@ -126,7 +126,7 @@ module.exports = (opts) ->
       if not obj.options.write then return
       # Maybe one needs it not only for urls - so ignore this check
       # if not obj.options.url then throw new Error("Writing fetched JSON Data
-      # to a file does only make sense on urls, he? So please provide a 'url' 
+      # to a file does only make sense on urls, he? So please provide a 'url'
       # option")
       return this.util.write(opts.write, JSON.stringify(obj.data))
 
