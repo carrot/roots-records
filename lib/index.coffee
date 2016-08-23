@@ -31,6 +31,7 @@ module.exports = (opts) ->
       W.all(fetch_records)
         .then (res) -> W.map(res, apply_hook)
         .tap (res) => W.map(res, add_to_locals.bind(@))
+        .tap (res) => W.map(res, write_hook.bind(@))
         .tap (res) => W.map(res, compile_single_views.bind(@))
 
     ###*
@@ -112,6 +113,17 @@ module.exports = (opts) ->
       if not obj.options.hook then return obj
       obj.data = obj.options.hook(obj.data)
       return obj
+    ###*
+     * If a write string option was provided in the config, write out the retrieved data to the configured file for later usage in the generated site.
+     *
+     * @param {String} obj - record object with a `key`, `options`, and `data`
+     ###
+
+    write_hook = (obj) ->
+      if not obj.options.write then return
+      # Maybe one needs it not only for urls - so ignore this check
+      # if not obj.options.url then throw new Error("Writing fetched JSON Data to a file does only make sense on urls, he? So please provide a 'url' option")
+      return this.util.write(opts.write, JSON.stringify(obj.data));
 
     ###*
      * Given a resolved records object, adds it to the view's locals.
